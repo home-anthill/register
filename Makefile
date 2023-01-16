@@ -31,7 +31,7 @@ doc:
 .PHONY: doc
 
 test:
-	RUST_BACKTRACE=full cargo test
+	ENV=testing RUST_BACKTRACE=full cargo test
 .PHONY: test
 
 # add tests coverage

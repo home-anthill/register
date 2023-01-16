@@ -81,7 +81,7 @@ pub async fn get_sensor_value(
     sensor_type: String,
 ) -> ApiResponse {
     info!(target: "app", "REST - GET - get_sensor_value");
-    get_sensor(db, uuid, sensor_type).await
+    find_sensor_value(db, uuid, sensor_type).await
 }
 
 async fn insert_register(
@@ -112,9 +112,9 @@ async fn insert_register(
     }
 }
 
-async fn get_sensor(db: &State<Database>, uuid: String, sensor_type: String) -> ApiResponse {
+async fn find_sensor_value(db: &State<Database>, uuid: String, sensor_type: String) -> ApiResponse {
     debug!(target: "app", "get_sensor - called with sensor_type = {}, uuid = {}", sensor_type, uuid);
-    match sensor::get_sensor(db, &uuid, &sensor_type).await {
+    match sensor::find_sensor_value_by_uuid(db, &uuid, &sensor_type).await {
         Ok(sensor_doc_opt) => {
             debug!(target: "app", "get_sensor - result sensor_doc_opt = {:?}", sensor_doc_opt);
             match sensor_doc_opt {

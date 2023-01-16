@@ -17,17 +17,19 @@ pub async fn insert_register(
 
     let collection = db.collection::<Document>(sensor_type);
 
-    let serialized_data: Bson;
-    if sensor_type == "temperature" || sensor_type == "humidity" || sensor_type == "light" {
-        serialized_data = new_from_register_input::<FloatSensor>(input).unwrap();
-    } else if sensor_type == "motion" || sensor_type == "airquality" || sensor_type == "airpressure"
-    {
-        serialized_data = new_from_register_input::<IntSensor>(input).unwrap();
-    } else {
-        error!(target: "app", "insert_register - Unknown sensor_type = {}", sensor_type);
-        // TODO return a custom error instead of use `panic`
-        panic!("Unknown type")
-    }
+    let serialized_data: Bson = match sensor_type {
+        "temperature" | "humidity" | "light" => {
+            new_from_register_input::<FloatSensor>(input).unwrap()
+        }
+        "motion" | "airquality" | "airpressure" => {
+            new_from_register_input::<IntSensor>(input).unwrap()
+        }
+        _ => {
+            error!(target: "app", "insert_register - Unknown sensor_type = {}", sensor_type);
+            // TODO return a custom error instead of use `panic`
+            panic!("Unknown type")
+        }
+    };
 
     debug!(target: "app", "insert_register - Adding sensor into db");
 
@@ -43,16 +45,17 @@ pub async fn insert_register(
         .to_hex())
 }
 
-pub async fn get_sensor(
+pub async fn find_sensor_value_by_uuid(
     db: &Database,
     uuid: &String,
     sensor_type: &String,
 ) -> mongodb::error::Result<Option<Document>> {
     info!(target: "app", "get_sensor - Called with uuid = {}, sensor_type = {}", uuid, sensor_type);
-
     let collection = db.collection::<Document>(sensor_type.as_str());
 
+    // find by uuid
     let filter = doc! { "uuid": uuid };
+    // limit the output to {"value": ...}
     let projection = doc! {"_id": 0, "value": 1};
     let find_options = FindOneOptions::builder().projection(projection).build();
 

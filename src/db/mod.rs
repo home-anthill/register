@@ -1,4 +1,4 @@
-use log::{error, info};
+use log::{error, info, warn};
 use std::env;
 
 use mongodb::options::ClientOptions;
@@ -21,7 +21,13 @@ pub fn init() -> AdHoc {
 
 async fn connect() -> mongodb::error::Result<Database> {
     let mongo_uri = env::var("MONGO_URI").expect("MONGO_URI is not found.");
-    let mongo_db_name = env::var("MONGO_DB_NAME").expect("MONGO_DB_NAME is not found.");
+
+    let mongo_db_name = if env::var("ENV") == Ok(String::from("testing")) {
+        warn!("TESTING ENVIRONMENT - forcing mongo_db_name = 'sensors_test'");
+        String::from("sensors_test")
+    } else {
+        env::var("MONGO_DB_NAME").expect("MONGO_DB_NAME is not found.")
+    };
 
     let mut client_options = ClientOptions::parse(mongo_uri).await?;
     client_options.app_name = Some("register".to_string());
