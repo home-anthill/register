@@ -25,24 +25,27 @@ pub async fn drop_all_collections(db: &Database) -> () {
     db.collection::<Document>("temperature")
         .drop(None)
         .await
-        .unwrap();
+        .expect("drop 'temperature' collection");
     db.collection::<Document>("humidity")
         .drop(None)
         .await
-        .unwrap();
-    db.collection::<Document>("light").drop(None).await.unwrap();
+        .expect("drop 'humidity' collection");
+    db.collection::<Document>("light")
+        .drop(None)
+        .await
+        .expect("drop 'light' collection");
     db.collection::<Document>("motion")
         .drop(None)
         .await
-        .unwrap();
+        .expect("drop 'motion' collection");
     db.collection::<Document>("airpressure")
         .drop(None)
         .await
-        .unwrap();
+        .expect("drop 'airpressure' collection");
     db.collection::<Document>("airquality")
         .drop(None)
         .await
-        .unwrap();
+        .expect("drop 'airquality' collection");
 }
 
 pub async fn find_sensor_by_uuid(

@@ -36,7 +36,9 @@ test:
 	# you need both 'grcov' and 'llvm-tools-preview' to run tests with coverage
 	rm -rf coverage
 	mkdir -p coverage/html
-	ENV=testing RUST_BACKTRACE=full CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='./coverage/cargo-test-%p-%m.profraw' cargo test
+	# run test instrumenting for code coverage
+	# append `-- --nocapture` to `cargo test` command to show output in console also on success
+	ENV=testing RUST_BACKTRACE=full CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='./coverage/cargo-test-%p-%m.profraw' cargo test -- --nocapture
 	grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore "src/tests/*" -o coverage/html
 	grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore "src/tests/*" -o coverage/tests.lcov
 .PHONY: test

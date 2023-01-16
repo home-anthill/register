@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use log::info;
 use uuid::Uuid;
 
 use super::rocket;
@@ -97,6 +98,7 @@ async fn get_sensor_value() {
     ]);
 
     for (sensor_type, sensor_val) in &sensors_inputs {
+        info!(target: "test", "get_sensor_value - TEST with type = {}, val_type = {} and value = {}", &sensor_type, &sensor_val.val_type, &sensor_val.value);
         // inputs
         let sensor_uuid: String = Uuid::new_v4().to_string();
         let mac: String = get_random_mac();
