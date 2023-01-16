@@ -5,11 +5,10 @@ on:
     paths-ignore:
       - '**.md'
       - '**.MD'
-    branches: [ "master" ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ "master" ]
+
   # To run the workflow manually from the Actions tab
   workflow_dispatch:
 
