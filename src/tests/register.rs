@@ -165,6 +165,6 @@ async fn get_sensor_value() {
     }
 
     // cleanup
-    // drop_all_collections(&db).await;
+    drop_all_collections(&db).await;
     let _ = client.terminate().await;
 }
