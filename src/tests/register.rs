@@ -145,8 +145,7 @@ async fn get_sensor_value() {
         }
 
         // test api
-        let req: LocalRequest = client
-            .get(format!("/sensors/{}/{}", sensor_uuid, sensor_type));
+        let req: LocalRequest = client.get(format!("/sensors/{}/{}", sensor_uuid, sensor_type));
         let res: LocalResponse = req.dispatch().await;
 
         // check results
@@ -158,10 +157,7 @@ async fn get_sensor_value() {
         } else {
             panic!("Unknown val_type. It must be either 'f64' or 'i64'.");
         };
-        assert_eq!(
-            res.into_json::<Value>().await.unwrap(),
-            expected
-        );
+        assert_eq!(res.into_json::<Value>().await.unwrap(), expected);
     }
 
     // cleanup

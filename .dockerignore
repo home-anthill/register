@@ -5,3 +5,4 @@ target
 logs
 .dockerignore
 Dockerfile
+coverage
