@@ -13,9 +13,7 @@ use register::routes;
 #[launch]
 fn rocket() -> Rocket<Build> {
     // 1. Init logger if not in testing environment
-    if env::var("ENV") != Ok(String::from("testing")) {
-        log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
-    }
+    let _ = log4rs::init_file("log4rs.yaml", Default::default());
     info!(target: "app", "Starting application...");
 
     // 2. Load the .env file

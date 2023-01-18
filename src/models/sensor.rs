@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
+use oid::Error;
 use mongodb::bson::oid::ObjectId;
-use mongodb::bson::ser::Result;
-use mongodb::bson::{to_bson, Bson, DateTime};
+use mongodb::bson::{to_bson, Bson, DateTime, oid};
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +17,7 @@ pub struct IntSensor {
     pub mac: String,
     pub manufacturer: String,
     pub model: String,
-    pub profileOwnerId: String,
+    pub profileOwnerId: ObjectId,
     pub apiToken: String,
     pub createdAt: DateTime,
     pub modifiedAt: DateTime,
@@ -31,7 +33,7 @@ pub struct FloatSensor {
     pub mac: String,
     pub manufacturer: String,
     pub model: String,
-    pub profileOwnerId: String,
+    pub profileOwnerId: ObjectId,
     pub apiToken: String,
     pub createdAt: DateTime,
     pub modifiedAt: DateTime,
@@ -44,7 +46,7 @@ pub trait Sensor {
         mac: String,
         manufacturer: String,
         model: String,
-        profile_owner_id: String,
+        profile_owner_id: ObjectId,
         api_token: String,
     ) -> Self;
 }
@@ -55,7 +57,7 @@ impl Sensor for IntSensor {
         mac: String,
         manufacturer: String,
         model: String,
-        profile_owner_id: String,
+        profile_owner_id: ObjectId,
         api_token: String,
     ) -> Self {
         Self::new(uuid, mac, manufacturer, model, profile_owner_id, api_token)
@@ -68,7 +70,7 @@ impl Sensor for FloatSensor {
         mac: String,
         manufacturer: String,
         model: String,
-        profile_owner_id: String,
+        profile_owner_id: ObjectId,
         api_token: String,
     ) -> Self {
         Self::new(uuid, mac, manufacturer, model, profile_owner_id, api_token)
@@ -81,7 +83,7 @@ impl IntSensor {
         mac: String,
         manufacturer: String,
         model: String,
-        profile_owner_id: String,
+        profile_owner_id: ObjectId,
         api_token: String,
     ) -> Self {
         let date_now: DateTime = DateTime::now();
@@ -106,7 +108,7 @@ impl FloatSensor {
         mac: String,
         manufacturer: String,
         model: String,
-        profile_owner_id: String,
+        profile_owner_id: ObjectId,
         api_token: String,
     ) -> Self {
         let date_now: DateTime = DateTime::now();
@@ -125,14 +127,20 @@ impl FloatSensor {
     }
 }
 
-pub fn new_from_register_input<T: Sensor + Serialize>(input: Json<RegisterInput>) -> Result<Bson> {
-    let result = T::new(
-        input.uuid.clone(),
-        input.mac.clone(),
-        input.manufacturer.clone(),
-        input.model.clone(),
-        input.profileOwnerId.clone(),
-        input.apiToken.clone(),
-    );
-    to_bson(&result)
+pub fn new_from_register_input<T: Sensor + Serialize>(input: Json<RegisterInput>) -> Result<Bson, Error> {
+    let profile_owner_id = ObjectId::from_str(input.profileOwnerId.as_str());
+    match profile_owner_id {
+        Ok(profile_id) => {
+            let result = T::new(
+                input.uuid.clone(),
+                input.mac.clone(),
+                input.manufacturer.clone(),
+                input.model.clone(),
+                profile_id,
+                input.apiToken.clone(),
+            );
+            Ok(to_bson(&result).unwrap())
+        },
+        Err(err) => Err(err)
+    }
 }

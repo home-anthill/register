@@ -15,6 +15,4 @@ async fn keepalive() {
         res.into_json::<Value>().await.unwrap(),
         json!({ "alive": true })
     );
-
-    let _ = client.terminate().await;
 }

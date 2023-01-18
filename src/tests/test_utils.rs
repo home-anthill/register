@@ -2,19 +2,19 @@ use rand::Rng;
 
 use register::models::inputs::RegisterInput;
 
-pub fn create_register_input(sensor_uuid: &String, mac: &String) -> RegisterInput {
+pub fn create_register_input(sensor_uuid: &str, mac: &str, profile_owner_id: &str) -> RegisterInput {
     RegisterInput {
-        uuid: sensor_uuid.clone(),
-        mac: mac.clone(),
+        uuid: sensor_uuid.to_string(),
+        mac: mac.to_string(),
         manufacturer: String::from("ks89"),
         model: String::from("test-model"),
-        profileOwnerId: String::from("63963ce7c7fd6d463c6c77a3"),
+        profileOwnerId: profile_owner_id.to_string(),
         apiToken: String::from("473a4861-632b-4915-b01e-cf1d418966c6"),
     }
 }
 
-pub fn build_register_input(sensor_uuid: &String, mac: &String) -> String {
-    serde_json::to_string(&create_register_input(sensor_uuid, mac)).unwrap()
+pub fn build_register_input(sensor_uuid: &str, mac: &str, profile_owner_id: &str) -> String {
+    serde_json::to_string(&create_register_input(sensor_uuid, mac, profile_owner_id)).unwrap()
 }
 
 pub fn get_random_mac() -> String {

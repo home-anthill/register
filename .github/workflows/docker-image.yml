@@ -55,7 +55,7 @@ jobs:
           echo "Installing dependencies"
           make deps-ci
           echo "Running tests"
-          make test
+          make test-coverage
 
   build:
     name: Build and publish

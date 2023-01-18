@@ -1,8 +1,8 @@
 use log::{debug, error, info};
+
 use rocket::http::Status;
 use rocket::serde::json::{json, Json};
 use rocket::State;
-
 use mongodb::Database;
 
 use crate::db::sensor;
@@ -90,7 +90,7 @@ async fn insert_register(
     sensor_type: &str,
 ) -> ApiResponse {
     debug!(target: "app", "insert_register - called with sensor_type = {}", sensor_type);
-    match sensor::insert_register(db, input, sensor_type).await {
+    match sensor::insert_sensor(db, input, sensor_type).await {
         Ok(register_doc_id) => {
             debug!(target: "app", "insert_register - document inserted with id = {}", register_doc_id);
             ApiResponse {
@@ -115,29 +115,13 @@ async fn insert_register(
 async fn find_sensor_value(db: &State<Database>, uuid: String, sensor_type: String) -> ApiResponse {
     debug!(target: "app", "get_sensor - called with sensor_type = {}, uuid = {}", sensor_type, uuid);
     match sensor::find_sensor_value_by_uuid(db, &uuid, &sensor_type).await {
-        Ok(sensor_doc_opt) => {
-            debug!(target: "app", "get_sensor - result sensor_doc_opt = {:?}", sensor_doc_opt);
-            match sensor_doc_opt {
-                Some(sensor_doc) => {
-                    info!(target: "app", "get_sensor - result sensor_doc = {}", sensor_doc);
-                    ApiResponse {
-                        json: json!(sensor_doc),
-                        code: Status::Ok.code,
-                    }
-                }
-                None => {
-                    error!(target: "app", "get_sensor - sensor with uuid = {} not found", &uuid);
-                    ApiResponse {
-                        json: serde_json::to_value(ApiError {
-                            message: "Sensor not found".to_string(),
-                            code: Status::NotFound.code,
-                        })
-                        .unwrap(),
-                        code: Status::NotFound.code,
-                    }
-                }
+        Ok(sensor_doc) => {
+            info!(target: "app", "get_sensor - result sensor_doc = {}", sensor_doc);
+            ApiResponse {
+                json: json!(sensor_doc),
+                code: Status::Ok.code,
             }
-        }
+        },
         Err(error) => {
             error!(target: "app", "get_sensor - error {:?}", error);
             ApiResponse {

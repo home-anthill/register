@@ -26,7 +26,3 @@ loggers:
     level: debug
     appenders:
       - app
-  test:
-    level: debug
-    appenders:
-      - stdout

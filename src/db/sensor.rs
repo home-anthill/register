@@ -5,35 +5,43 @@ use mongodb::options::FindOneOptions;
 use mongodb::Database;
 use rocket::serde::json::Json;
 
+use crate::errors::db_error::DbError;
 use crate::models::inputs::RegisterInput;
 use crate::models::sensor::{new_from_register_input, FloatSensor, IntSensor};
 
-pub async fn insert_register(
+pub async fn insert_sensor(
     db: &Database,
     input: Json<RegisterInput>,
     sensor_type: &str,
-) -> mongodb::error::Result<String> {
-    info!(target: "app", "insert_register - Called with sensor_type = {}", sensor_type);
+) -> Result<String, DbError> {
+    info!(target: "app", "insert_sensor - Called with sensor_type = {}", sensor_type);
 
     let collection = db.collection::<Document>(sensor_type);
 
-    let serialized_data: Bson = match sensor_type {
+    let serialized_input: Bson = match sensor_type {
         "temperature" | "humidity" | "light" => {
-            new_from_register_input::<FloatSensor>(input).unwrap()
+            let result = new_from_register_input::<FloatSensor>(input);
+            match result {
+                Ok(res) => res,
+                Err(err) => return Err(DbError::new(err.to_string()))
+            }
         }
         "motion" | "airquality" | "airpressure" => {
-            new_from_register_input::<IntSensor>(input).unwrap()
+            let result = new_from_register_input::<IntSensor>(input);
+            match result {
+                Ok(res) => res,
+                Err(err) => return Err(DbError::new(err.to_string()))
+            }
         }
         _ => {
-            error!(target: "app", "insert_register - Unknown sensor_type = {}", sensor_type);
-            // TODO return a custom error instead of use `panic`
-            panic!("Unknown type")
+            error!(target: "app", "insert_sensor - Unknown sensor_type = {}", sensor_type);
+            return Err(DbError::new(format!("Unknown sensor_type = {}", sensor_type)))
         }
     };
 
-    debug!(target: "app", "insert_register - Adding sensor into db");
+    debug!(target: "app", "insert_sensor - Adding sensor into db");
 
-    let document = serialized_data.as_document().unwrap();
+    let document = serialized_input.as_document().unwrap();
     let insert_one_result = collection
         .insert_one(document.to_owned(), None)
         .await
@@ -49,8 +57,8 @@ pub async fn find_sensor_value_by_uuid(
     db: &Database,
     uuid: &String,
     sensor_type: &String,
-) -> mongodb::error::Result<Option<Document>> {
-    info!(target: "app", "get_sensor - Called with uuid = {}, sensor_type = {}", uuid, sensor_type);
+) -> Result<Document, DbError> {
+    info!(target: "app", "find_sensor_value_by_uuid - Called with uuid = {}, sensor_type = {}", uuid, sensor_type);
     let collection = db.collection::<Document>(sensor_type.as_str());
 
     // find by uuid
@@ -59,7 +67,15 @@ pub async fn find_sensor_value_by_uuid(
     let projection = doc! {"_id": 0, "value": 1};
     let find_options = FindOneOptions::builder().projection(projection).build();
 
-    debug!(target: "app", "get_sensor - Getting sensor value with uuid = {} from db", uuid);
+    debug!(target: "app", "find_sensor_value_by_uuid - Getting sensor value with uuid = {} from db", uuid);
 
-    collection.find_one(filter, find_options).await
+    match collection.find_one(filter, find_options).await {
+        Ok(doc_result) => {
+            match doc_result{
+                Some(doc) => Ok(doc),
+                None => Err(DbError::new(String::from("Cannot find sensor")))
+            }
+        },
+        Err(err) => Err(DbError::new(err.to_string()))
+    }
 }
