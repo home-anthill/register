@@ -48,7 +48,6 @@ fn rocket() -> Rocket<Build> {
             catchers![
                 catchers::bad_request,
                 catchers::not_found,
-                catchers::unprocessable_entity,
                 catchers::internal_server_error,
             ],
         )

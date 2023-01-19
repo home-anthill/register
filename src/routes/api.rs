@@ -1,9 +1,9 @@
 use log::{debug, error, info};
 
+use mongodb::Database;
 use rocket::http::Status;
 use rocket::serde::json::{json, Json};
 use rocket::State;
-use mongodb::Database;
 
 use crate::db::sensor;
 use crate::errors::api_error::{ApiError, ApiResponse};
@@ -121,7 +121,7 @@ async fn find_sensor_value(db: &State<Database>, uuid: String, sensor_type: Stri
                 json: json!(sensor_doc),
                 code: Status::Ok.code,
             }
-        },
+        }
         Err(error) => {
             error!(target: "app", "get_sensor - error {:?}", error);
             ApiResponse {

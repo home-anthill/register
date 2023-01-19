@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use log::info;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::rocket;
@@ -9,7 +9,10 @@ use rocket::local::asynchronous::{Client, LocalRequest, LocalResponse};
 use rocket::serde::json::Json;
 use serde_json::{json, Value};
 
-use crate::tests::db_utils::{connect, drop_all_collections, find_sensor_by_uuid, insert_sensor, update_sensor_float_value_by_uuid, update_sensor_int_value_by_uuid};
+use crate::tests::db_utils::{
+    connect, drop_all_collections, find_sensor_by_uuid, insert_sensor,
+    update_sensor_float_value_by_uuid, update_sensor_int_value_by_uuid,
+};
 use crate::tests::test_utils::{build_register_input, create_register_input, get_random_mac};
 use register::models::inputs::RegisterInput;
 
@@ -83,23 +86,34 @@ async fn register_sensor_error() {
     let db: Database = connect().await.unwrap();
     drop_all_collections(&db).await;
 
-    // inputs
-    let sensor_uuid: String = Uuid::new_v4().to_string();
-    let mac: String = get_random_mac();
-    let wrong_profile_id = String::from("dasd7dasjdhdsygsyuad");
-    // try to add a sensor with POST body using a 'profileOwnerId'
-    // with bad format (it must be a mongodb ObjectId)
-    let register_body = build_register_input(&sensor_uuid, &mac, &wrong_profile_id);
+    // run tests for every sensor_type
+    let sensor_types = vec![
+        "temperature",
+        "humidity",
+        "light",
+        "motion",
+        "airquality",
+        "airpressure",
+    ];
+    for sensor_type in sensor_types.into_iter() {
+        // inputs
+        let sensor_uuid: String = Uuid::new_v4().to_string();
+        let mac: String = get_random_mac();
+        let wrong_profile_id = String::from("dasd7dasjdhdsygsyuad");
+        // try to add a sensor with POST body using a 'profileOwnerId'
+        // with bad format (it must be a mongodb ObjectId)
+        let register_body = build_register_input(&sensor_uuid, &mac, &wrong_profile_id);
 
-    // test api
-    let req: LocalRequest = client
-        .post("/sensors/register/temperature")
-        .header(ContentType::JSON)
-        .body(register_body);
-    let res: LocalResponse = req.dispatch().await;
+        // test api
+        let req: LocalRequest = client
+            .post("/sensors/register/".to_owned() + sensor_type)
+            .header(ContentType::JSON)
+            .body(register_body);
+        let res: LocalResponse = req.dispatch().await;
 
-    // check results
-    assert_eq!(res.status(), Status::BadRequest);
+        // check results
+        assert_eq!(res.status(), Status::BadRequest);
+    }
 
     // cleanup
     drop_all_collections(&db).await;
@@ -129,7 +143,8 @@ async fn get_sensor_value() {
         let sensor_uuid: String = Uuid::new_v4().to_string();
         let mac: String = get_random_mac();
         let profile_owner_id = "63963ce7c7fd6d463c6c77a3";
-        let register_body: RegisterInput = create_register_input(&sensor_uuid, &mac, profile_owner_id);
+        let register_body: RegisterInput =
+            create_register_input(&sensor_uuid, &mac, profile_owner_id);
 
         // fill db with a sensor with default zero value
         let _ = insert_sensor(&db, Json(register_body), sensor_type).await;

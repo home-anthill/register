@@ -23,19 +23,22 @@ pub async fn insert_sensor(
             let result = new_from_register_input::<FloatSensor>(input);
             match result {
                 Ok(res) => res,
-                Err(err) => return Err(DbError::new(err.to_string()))
+                Err(err) => return Err(DbError::new(err.to_string())),
             }
         }
         "motion" | "airquality" | "airpressure" => {
             let result = new_from_register_input::<IntSensor>(input);
             match result {
                 Ok(res) => res,
-                Err(err) => return Err(DbError::new(err.to_string()))
+                Err(err) => return Err(DbError::new(err.to_string())),
             }
         }
         _ => {
             error!(target: "app", "insert_sensor - Unknown sensor_type = {}", sensor_type);
-            return Err(DbError::new(format!("Unknown sensor_type = {}", sensor_type)))
+            return Err(DbError::new(format!(
+                "Unknown sensor_type = {}",
+                sensor_type
+            )));
         }
     };
 
@@ -70,12 +73,10 @@ pub async fn find_sensor_value_by_uuid(
     debug!(target: "app", "find_sensor_value_by_uuid - Getting sensor value with uuid = {} from db", uuid);
 
     match collection.find_one(filter, find_options).await {
-        Ok(doc_result) => {
-            match doc_result{
-                Some(doc) => Ok(doc),
-                None => Err(DbError::new(String::from("Cannot find sensor")))
-            }
+        Ok(doc_result) => match doc_result {
+            Some(doc) => Ok(doc),
+            None => Err(DbError::new(String::from("Cannot find sensor"))),
         },
-        Err(err) => Err(DbError::new(err.to_string()))
+        Err(err) => Err(DbError::new(err.to_string())),
     }
 }

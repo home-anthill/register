@@ -1,7 +1,8 @@
 use super::rocket;
 
-pub mod keepalive;
-pub mod register;
+mod errors_catchers;
+mod keepalive;
+mod register;
 
 // test utils
 mod db_utils;

@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
-use oid::Error;
 use mongodb::bson::oid::ObjectId;
-use mongodb::bson::{to_bson, Bson, DateTime, oid};
+use mongodb::bson::{oid, to_bson, Bson, DateTime};
+use oid::Error;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
@@ -127,7 +127,9 @@ impl FloatSensor {
     }
 }
 
-pub fn new_from_register_input<T: Sensor + Serialize>(input: Json<RegisterInput>) -> Result<Bson, Error> {
+pub fn new_from_register_input<T: Sensor + Serialize>(
+    input: Json<RegisterInput>,
+) -> Result<Bson, Error> {
     let profile_owner_id = ObjectId::from_str(input.profileOwnerId.as_str());
     match profile_owner_id {
         Ok(profile_id) => {
@@ -140,7 +142,7 @@ pub fn new_from_register_input<T: Sensor + Serialize>(input: Json<RegisterInput>
                 input.apiToken.clone(),
             );
             Ok(to_bson(&result).unwrap())
-        },
-        Err(err) => Err(err)
+        }
+        Err(err) => Err(err),
     }
 }
