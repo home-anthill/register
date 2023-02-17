@@ -44,7 +44,13 @@ test-coverage:
 	# run test instrumenting for code coverage
 	# append `-- --nocapture` to `cargo test` command to show output in console also on success
 	ENV=testing RUST_BACKTRACE=full CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='./coverage/cargo-test-%p-%m.profraw' cargo test -- --nocapture --test-threads 1
-	grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore "src/tests/*" -o coverage/html
+	grcov . --binary-path ./target/debug/ -s . -t html --branch \
+			--ignore-not-existing \
+            --ignore "src/tests_integration/*" \
+            --ignore "target/*" \
+			--excl-start '^\#\[cfg\(test\)\]' \
+            --excl-stop '^}' \
+            -o coverage/html
 	# if you want, you can emit lcov report or other via -t parameter
 	# grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore "src/tests/*" -o coverage/tests.lcov
 .PHONY: coverage

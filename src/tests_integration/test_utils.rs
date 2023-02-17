@@ -2,11 +2,7 @@ use rand::Rng;
 
 use register::models::inputs::RegisterInput;
 
-pub fn create_register_input(
-    sensor_uuid: &str,
-    mac: &str,
-    profile_owner_id: &str,
-) -> RegisterInput {
+pub fn create_register_input(sensor_uuid: &str, mac: &str, profile_owner_id: &str) -> RegisterInput {
     RegisterInput {
         uuid: sensor_uuid.to_string(),
         mac: mac.to_string(),

@@ -65,26 +65,15 @@ pub async fn insert_sensor(
 ) -> mongodb::error::Result<String> {
     let collection = db.collection::<Document>(sensor_type);
     let serialized_data: Bson = match sensor_type {
-        "temperature" | "humidity" | "light" => {
-            new_from_register_input::<FloatSensor>(input).unwrap()
-        }
-        "motion" | "airquality" | "airpressure" => {
-            new_from_register_input::<IntSensor>(input).unwrap()
-        }
+        "temperature" | "humidity" | "light" => new_from_register_input::<FloatSensor>(input).unwrap(),
+        "motion" | "airquality" | "airpressure" => new_from_register_input::<IntSensor>(input).unwrap(),
         _ => {
             panic!("Unknown type")
         }
     };
     let document = serialized_data.as_document().unwrap();
-    let insert_one_result = collection
-        .insert_one(document.to_owned(), None)
-        .await
-        .unwrap();
-    Ok(insert_one_result
-        .inserted_id
-        .as_object_id()
-        .unwrap()
-        .to_hex())
+    let insert_one_result = collection.insert_one(document.to_owned(), None).await.unwrap();
+    Ok(insert_one_result.inserted_id.as_object_id().unwrap().to_hex())
 }
 
 pub async fn update_sensor_float_value_by_uuid(
@@ -96,9 +85,7 @@ pub async fn update_sensor_float_value_by_uuid(
     let collection = db.collection::<Document>(sensor_type);
     let filter = doc! { "uuid": uuid };
     let update = doc! {"$set": {"value": value}};
-    collection
-        .find_one_and_update(filter.clone(), update, None)
-        .await
+    collection.find_one_and_update(filter.clone(), update, None).await
 }
 
 pub async fn update_sensor_int_value_by_uuid(
@@ -110,7 +97,5 @@ pub async fn update_sensor_int_value_by_uuid(
     let collection = db.collection::<Document>(sensor_type);
     let filter = doc! { "uuid": uuid };
     let update = doc! {"$set": {"value": value}};
-    collection
-        .find_one_and_update(filter.clone(), update, None)
-        .await
+    collection.find_one_and_update(filter.clone(), update, None).await
 }

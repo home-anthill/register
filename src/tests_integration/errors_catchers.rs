@@ -22,8 +22,5 @@ async fn error_catcher_bad_request() {
         .body("bad-input");
     let res: LocalResponse = req.dispatch().await;
     assert_eq!(res.status(), Status::BadRequest);
-    assert_eq!(
-        res.into_string().await.unwrap(),
-        String::from("Bad request")
-    );
+    assert_eq!(res.into_string().await.unwrap(), String::from("Bad request"));
 }

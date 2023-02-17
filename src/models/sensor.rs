@@ -127,9 +127,7 @@ impl FloatSensor {
     }
 }
 
-pub fn new_from_register_input<T: Sensor + Serialize>(
-    input: Json<RegisterInput>,
-) -> Result<Bson, Error> {
+pub fn new_from_register_input<T: Sensor + Serialize>(input: Json<RegisterInput>) -> Result<Bson, Error> {
     let profile_owner_id = ObjectId::from_str(input.profileOwnerId.as_str());
     match profile_owner_id {
         Ok(profile_id) => {

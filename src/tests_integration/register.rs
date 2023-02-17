@@ -9,11 +9,11 @@ use rocket::local::asynchronous::{Client, LocalRequest, LocalResponse};
 use rocket::serde::json::Json;
 use serde_json::{json, Value};
 
-use crate::tests::db_utils::{
-    connect, drop_all_collections, find_sensor_by_uuid, insert_sensor,
-    update_sensor_float_value_by_uuid, update_sensor_int_value_by_uuid,
+use crate::tests_integration::db_utils::{
+    connect, drop_all_collections, find_sensor_by_uuid, insert_sensor, update_sensor_float_value_by_uuid,
+    update_sensor_int_value_by_uuid,
 };
-use crate::tests::test_utils::{build_register_input, create_register_input, get_random_mac};
+use crate::tests_integration::test_utils::{build_register_input, create_register_input, get_random_mac};
 use register::models::inputs::RegisterInput;
 
 #[derive(Hash, Eq, PartialEq, Debug)]
@@ -69,10 +69,7 @@ async fn register_sensor() {
 
         // check results
         assert_eq!(res.status(), Status::Ok);
-        assert_eq!(
-            res.into_json::<Value>().await.unwrap(),
-            json!({ "id": inserted_id })
-        );
+        assert_eq!(res.into_json::<Value>().await.unwrap(), json!({ "id": inserted_id }));
     }
 
     // cleanup
@@ -143,21 +140,15 @@ async fn get_sensor_value() {
         let sensor_uuid: String = Uuid::new_v4().to_string();
         let mac: String = get_random_mac();
         let profile_owner_id = "63963ce7c7fd6d463c6c77a3";
-        let register_body: RegisterInput =
-            create_register_input(&sensor_uuid, &mac, profile_owner_id);
+        let register_body: RegisterInput = create_register_input(&sensor_uuid, &mac, profile_owner_id);
 
         // fill db with a sensor with default zero value
         let _ = insert_sensor(&db, Json(register_body), sensor_type).await;
         if sensor_val.val_type == "f64" {
-            update_sensor_float_value_by_uuid(
-                &db,
-                &sensor_uuid,
-                sensor_type,
-                sensor_val.value as f64,
-            )
-            .await
-            .unwrap()
-            .unwrap();
+            update_sensor_float_value_by_uuid(&db, &sensor_uuid, sensor_type, sensor_val.value as f64)
+                .await
+                .unwrap()
+                .unwrap();
             let document = find_sensor_by_uuid(&db, &sensor_uuid, sensor_type)
                 .await
                 .unwrap()
@@ -167,23 +158,15 @@ async fn get_sensor_value() {
                 sensor_val.value as f64
             );
         } else if sensor_val.val_type == "i64" {
-            update_sensor_int_value_by_uuid(
-                &db,
-                &sensor_uuid,
-                sensor_type,
-                sensor_val.value as i64,
-            )
-            .await
-            .unwrap()
-            .unwrap();
+            update_sensor_int_value_by_uuid(&db, &sensor_uuid, sensor_type, sensor_val.value as i64)
+                .await
+                .unwrap()
+                .unwrap();
             let document = find_sensor_by_uuid(&db, &sensor_uuid, sensor_type)
                 .await
                 .unwrap()
                 .unwrap();
-            assert_eq!(
-                document.get("value").unwrap().as_i64().unwrap(),
-                sensor_val.value
-            );
+            assert_eq!(document.get("value").unwrap().as_i64().unwrap(), sensor_val.value);
         } else {
             panic!("Unknown val_type. It must be either 'f64' or 'i64'.");
         }

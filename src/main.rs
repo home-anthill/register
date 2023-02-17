@@ -1,35 +1,26 @@
 #[macro_use]
 extern crate rocket;
 
-use dotenvy::dotenv;
 use log::info;
 use rocket::{Build, Rocket};
-use std::env;
 
 use register::catchers;
+use register::config::{init, Env};
 use register::db;
 use register::routes;
 
 #[launch]
 fn rocket() -> Rocket<Build> {
-    // 1. Init logger if not in testing environment
-    let _ = log4rs::init_file("log4rs.yaml", Default::default());
-    info!(target: "app", "Starting application...");
+    // 1. Init logger and env
+    let env: Env = init();
 
-    // 2. Load the .env file
-    dotenv().ok();
-
-    // 3. Print .env vars
-    info!(target: "app", "MONGO_URI = {}", env::var("MONGO_URI").expect("MONGO_URI is not found."));
-    info!(target: "app", "MONGO_DB_NAME = {}", env::var("MONGO_DB_NAME").expect("MONGO_DB_NAME is not found."));
-
-    // 4. Init Rocket
+    // 2. Init Rocket
     // a) connect to DB
     // b) define APIs
     // c) define error handlers
-    info!(target: "app", "Starting Rocket");
+    info!(target: "app", "Starting Rocket...");
     rocket::build()
-        .attach(db::init())
+        .attach(db::init(env))
         .mount(
             "/",
             routes![
@@ -53,6 +44,6 @@ fn rocket() -> Rocket<Build> {
         )
 }
 
-// Unit testings
+// testing
 #[cfg(test)]
-mod tests;
+mod tests_integration;

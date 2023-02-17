@@ -1,15 +1,16 @@
 use log::{error, info, warn};
-use std::env;
-
 use mongodb::options::ClientOptions;
 use mongodb::{Client, Database};
 use rocket::fairing::AdHoc;
+use std::env;
+
+use crate::config::Env;
 
 pub mod sensor;
 
-pub fn init() -> AdHoc {
+pub fn init(env_config: Env) -> AdHoc {
     AdHoc::on_ignite("Connecting to MongoDB", |rocket| async {
-        match connect().await {
+        match connect(env_config).await {
             Ok(database) => rocket.manage(database),
             Err(error) => {
                 error!(target: "app", "MongoDB - cannot connect {:?}", error);
@@ -19,14 +20,14 @@ pub fn init() -> AdHoc {
     })
 }
 
-async fn connect() -> mongodb::error::Result<Database> {
-    let mongo_uri = env::var("MONGO_URI").expect("MONGO_URI is not found.");
+async fn connect(env_config: Env) -> mongodb::error::Result<Database> {
+    let mongo_uri = env_config.mongo_uri.clone();
 
     let mongo_db_name = if env::var("ENV") == Ok(String::from("testing")) {
         warn!("TESTING ENVIRONMENT - forcing mongo_db_name = 'sensors_test'");
         String::from("sensors_test")
     } else {
-        env::var("MONGO_DB_NAME").expect("MONGO_DB_NAME is not found.")
+        env_config.mongo_db_name.clone()
     };
 
     let mut client_options = ClientOptions::parse(mongo_uri).await?;

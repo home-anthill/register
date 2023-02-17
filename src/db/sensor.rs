@@ -9,11 +9,7 @@ use crate::errors::db_error::DbError;
 use crate::models::inputs::RegisterInput;
 use crate::models::sensor::{new_from_register_input, FloatSensor, IntSensor};
 
-pub async fn insert_sensor(
-    db: &Database,
-    input: Json<RegisterInput>,
-    sensor_type: &str,
-) -> Result<String, DbError> {
+pub async fn insert_sensor(db: &Database, input: Json<RegisterInput>, sensor_type: &str) -> Result<String, DbError> {
     info!(target: "app", "insert_sensor - Called with sensor_type = {}", sensor_type);
 
     let collection = db.collection::<Document>(sensor_type);
@@ -35,25 +31,15 @@ pub async fn insert_sensor(
         }
         _ => {
             error!(target: "app", "insert_sensor - Unknown sensor_type = {}", sensor_type);
-            return Err(DbError::new(format!(
-                "Unknown sensor_type = {}",
-                sensor_type
-            )));
+            return Err(DbError::new(format!("Unknown sensor_type = {}", sensor_type)));
         }
     };
 
     debug!(target: "app", "insert_sensor - Adding sensor into db");
 
     let document = serialized_input.as_document().unwrap();
-    let insert_one_result = collection
-        .insert_one(document.to_owned(), None)
-        .await
-        .unwrap();
-    Ok(insert_one_result
-        .inserted_id
-        .as_object_id()
-        .unwrap()
-        .to_hex())
+    let insert_one_result = collection.insert_one(document.to_owned(), None).await.unwrap();
+    Ok(insert_one_result.inserted_id.as_object_id().unwrap().to_hex())
 }
 
 pub async fn find_sensor_value_by_uuid(

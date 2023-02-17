@@ -21,20 +21,14 @@ pub async fn keep_alive() -> ApiResponse {
 
 /// register a new temperature sensor
 #[post("/sensors/register/temperature", data = "<input>")]
-pub async fn post_register_temperature(
-    db: &State<Database>,
-    input: Json<RegisterInput>,
-) -> ApiResponse {
+pub async fn post_register_temperature(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
     info!(target: "app", "REST - POST - post_register_temperature");
     insert_register(db, input, "temperature").await
 }
 
 /// register a new humidity sensor
 #[post("/sensors/register/humidity", data = "<input>")]
-pub async fn post_register_humidity(
-    db: &State<Database>,
-    input: Json<RegisterInput>,
-) -> ApiResponse {
+pub async fn post_register_humidity(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
     info!(target: "app", "REST - POST - post_register_humidity");
     insert_register(db, input, "humidity").await
 }
@@ -55,40 +49,26 @@ pub async fn post_register_motion(db: &State<Database>, input: Json<RegisterInpu
 
 /// register a new airquality sensor
 #[post("/sensors/register/airquality", data = "<input>")]
-pub async fn post_register_airquality(
-    db: &State<Database>,
-    input: Json<RegisterInput>,
-) -> ApiResponse {
+pub async fn post_register_airquality(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
     info!(target: "app", "REST - POST - post_register_airquality");
     insert_register(db, input, "airquality").await
 }
 
 /// register a new airpressure sensor
 #[post("/sensors/register/airpressure", data = "<input>")]
-pub async fn post_register_airpressure(
-    db: &State<Database>,
-    input: Json<RegisterInput>,
-) -> ApiResponse {
+pub async fn post_register_airpressure(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
     info!(target: "app", "REST - POST - post_register_airpressure");
     insert_register(db, input, "airpressure").await
 }
 
 /// get sensor value by UUID and type
 #[get("/sensors/<uuid>/<sensor_type>")]
-pub async fn get_sensor_value(
-    db: &State<Database>,
-    uuid: String,
-    sensor_type: String,
-) -> ApiResponse {
+pub async fn get_sensor_value(db: &State<Database>, uuid: String, sensor_type: String) -> ApiResponse {
     info!(target: "app", "REST - GET - get_sensor_value");
     find_sensor_value(db, uuid, sensor_type).await
 }
 
-async fn insert_register(
-    db: &State<Database>,
-    input: Json<RegisterInput>,
-    sensor_type: &str,
-) -> ApiResponse {
+async fn insert_register(db: &State<Database>, input: Json<RegisterInput>, sensor_type: &str) -> ApiResponse {
     debug!(target: "app", "insert_register - called with sensor_type = {}", sensor_type);
     match sensor::insert_sensor(db, input, sensor_type).await {
         Ok(register_doc_id) => {
