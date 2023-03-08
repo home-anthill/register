@@ -97,8 +97,29 @@ async fn find_sensor_value(db: &State<Database>, uuid: String, sensor_type: Stri
     match sensor::find_sensor_value_by_uuid(db, &uuid, &sensor_type).await {
         Ok(sensor_doc) => {
             info!(target: "app", "get_sensor - result sensor_doc = {}", sensor_doc);
+            let value: f64 = match sensor_type.as_str() {
+                "temperature" | "humidity" | "light" | "airpressure" => sensor_doc.get_f64("value").unwrap(),
+                "motion" | "airquality" => sensor_doc.get_i64("value").unwrap() as f64,
+                _ => {
+                    return ApiResponse {
+                        json: serde_json::to_value(ApiError {
+                            message: "Unknown sensor type".to_string(),
+                            code: Status::InternalServerError.code,
+                        })
+                        .unwrap(),
+                        code: Status::InternalServerError.code,
+                    };
+                }
+            };
+            let created_at = sensor_doc.get_datetime("createdAt").unwrap().timestamp_millis();
+            let modified_at = sensor_doc.get_datetime("modifiedAt").unwrap().timestamp_millis();
             ApiResponse {
-                json: json!(sensor_doc),
+                json: json!({
+                    // in json response, 'value' is always a f64, even if in db it's a i64
+                    "value": value,
+                    "createdAt": created_at,
+                    "modifiedAt": modified_at,
+                }),
                 code: Status::Ok.code,
             }
         }

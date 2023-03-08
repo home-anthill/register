@@ -15,14 +15,14 @@ pub async fn insert_sensor(db: &Database, input: Json<RegisterInput>, sensor_typ
     let collection = db.collection::<Document>(sensor_type);
 
     let serialized_input: Bson = match sensor_type {
-        "temperature" | "humidity" | "light" => {
+        "temperature" | "humidity" | "light" | "airpressure" => {
             let result = new_from_register_input::<FloatSensor>(input);
             match result {
                 Ok(res) => res,
                 Err(err) => return Err(DbError::new(err.to_string())),
             }
         }
-        "motion" | "airquality" | "airpressure" => {
+        "motion" | "airquality" => {
             let result = new_from_register_input::<IntSensor>(input);
             match result {
                 Ok(res) => res,
@@ -52,8 +52,8 @@ pub async fn find_sensor_value_by_uuid(
 
     // find by uuid
     let filter = doc! { "uuid": uuid };
-    // limit the output to {"value": ...}
-    let projection = doc! {"_id": 0, "value": 1};
+    // limit the output to {"value", "createdAt" and "modifiedAt"}
+    let projection = doc! {"_id": 0, "value": 1, "createdAt": 1, "modifiedAt": 1};
     let find_options = FindOneOptions::builder().projection(projection).build();
 
     debug!(target: "app", "find_sensor_value_by_uuid - Getting sensor value with uuid = {} from db", uuid);
