@@ -1,7 +1,6 @@
 use log::{debug, error, info};
 
 use mongodb::bson::{doc, Bson, Document};
-use mongodb::options::FindOneOptions;
 use mongodb::Database;
 use rocket::serde::json::Json;
 
@@ -38,7 +37,7 @@ pub async fn insert_sensor(db: &Database, input: Json<RegisterInput>, sensor_typ
     debug!(target: "app", "insert_sensor - Adding sensor into db");
 
     let document = serialized_input.as_document().unwrap();
-    let insert_one_result = collection.insert_one(document.to_owned(), None).await.unwrap();
+    let insert_one_result = collection.insert_one(document.to_owned()).await.unwrap();
     Ok(insert_one_result.inserted_id.as_object_id().unwrap().to_hex())
 }
 
@@ -54,11 +53,10 @@ pub async fn find_sensor_value_by_uuid(
     let filter = doc! { "uuid": uuid };
     // limit the output to {"value", "createdAt" and "modifiedAt"}
     let projection = doc! {"_id": 0, "value": 1, "createdAt": 1, "modifiedAt": 1};
-    let find_options = FindOneOptions::builder().projection(projection).build();
 
     debug!(target: "app", "find_sensor_value_by_uuid - Getting sensor value with uuid = {} from db", uuid);
 
-    match collection.find_one(filter, find_options).await {
+    match collection.find_one(filter).projection(projection).await {
         Ok(doc_result) => match doc_result {
             Some(doc) => Ok(doc),
             None => Err(DbError::new(String::from("Cannot find sensor"))),

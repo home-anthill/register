@@ -23,27 +23,27 @@ pub async fn connect() -> mongodb::error::Result<Database> {
 
 pub async fn drop_all_collections(db: &Database) -> () {
     db.collection::<Document>("temperature")
-        .drop(None)
+        .drop()
         .await
         .expect("drop 'temperature' collection");
     db.collection::<Document>("humidity")
-        .drop(None)
+        .drop()
         .await
         .expect("drop 'humidity' collection");
     db.collection::<Document>("light")
-        .drop(None)
+        .drop()
         .await
         .expect("drop 'light' collection");
     db.collection::<Document>("motion")
-        .drop(None)
+        .drop()
         .await
         .expect("drop 'motion' collection");
     db.collection::<Document>("airpressure")
-        .drop(None)
+        .drop()
         .await
         .expect("drop 'airpressure' collection");
     db.collection::<Document>("airquality")
-        .drop(None)
+        .drop()
         .await
         .expect("drop 'airquality' collection");
 }
@@ -55,7 +55,7 @@ pub async fn find_sensor_by_uuid(
 ) -> mongodb::error::Result<Option<Document>> {
     let collection = db.collection::<Document>(sensor_type);
     let filter = doc! { "uuid": uuid };
-    collection.find_one(filter, None).await
+    collection.find_one(filter).await
 }
 
 pub async fn insert_sensor(
@@ -72,7 +72,7 @@ pub async fn insert_sensor(
         }
     };
     let document = serialized_data.as_document().unwrap();
-    let insert_one_result = collection.insert_one(document.to_owned(), None).await.unwrap();
+    let insert_one_result = collection.insert_one(document.to_owned()).await?;
     Ok(insert_one_result.inserted_id.as_object_id().unwrap().to_hex())
 }
 
@@ -85,7 +85,7 @@ pub async fn update_sensor_float_value_by_uuid(
     let collection = db.collection::<Document>(sensor_type);
     let filter = doc! { "uuid": uuid };
     let update = doc! {"$set": {"value": value}};
-    collection.find_one_and_update(filter.clone(), update, None).await
+    collection.find_one_and_update(filter.clone(), update).await
 }
 
 pub async fn update_sensor_int_value_by_uuid(
@@ -97,5 +97,5 @@ pub async fn update_sensor_int_value_by_uuid(
     let collection = db.collection::<Document>(sensor_type);
     let filter = doc! { "uuid": uuid };
     let update = doc! {"$set": {"value": value}};
-    collection.find_one_and_update(filter.clone(), update, None).await
+    collection.find_one_and_update(filter.clone(), update).await
 }

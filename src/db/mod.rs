@@ -1,10 +1,10 @@
+use crate::config::Env;
+use std::env;
 use log::{error, info, warn};
-use mongodb::options::ClientOptions;
+use mongodb::bson::doc;
+use mongodb::options::{ClientOptions, ServerApi, ServerApiVersion};
 use mongodb::{Client, Database};
 use rocket::fairing::AdHoc;
-use std::env;
-
-use crate::config::Env;
 
 pub mod sensor;
 
@@ -31,9 +31,19 @@ async fn connect(env_config: Env) -> mongodb::error::Result<Database> {
     };
 
     let mut client_options = ClientOptions::parse(mongo_uri).await?;
+
+    // Set the server_api field of the client_options object to Stable API version 1
+    let server_api = ServerApi::builder().version(ServerApiVersion::V1).build();
+    client_options.server_api = Some(server_api);
+    // Set app_name
     client_options.app_name = Some("register".to_string());
+
+    // Create a new client and connect to the server
     let client = Client::with_options(client_options)?;
     let database = client.database(mongo_db_name.as_str());
+
+    info!(target: "app", "Pinging MongoDB server...");
+    database.run_command(doc! { "ping": 1 }).await?;
 
     info!(target: "app", "MongoDB connected!");
 
