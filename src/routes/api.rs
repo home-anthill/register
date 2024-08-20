@@ -12,7 +12,6 @@ use crate::models::inputs::RegisterInput;
 /// keepalive
 #[get("/keepalive")]
 pub async fn keep_alive() -> ApiResponse {
-    info!(target: "app", "REST - GET - keep_alive");
     ApiResponse {
         json: json!({ "alive": true }),
         code: Status::Ok.code,
