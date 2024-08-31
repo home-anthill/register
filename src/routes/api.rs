@@ -92,10 +92,10 @@ async fn insert_register(db: &State<Database>, input: Json<RegisterInput>, senso
 }
 
 async fn find_sensor_value(db: &State<Database>, uuid: String, sensor_type: String) -> ApiResponse {
-    debug!(target: "app", "get_sensor - called with sensor_type = {}, uuid = {}", sensor_type, uuid);
+    debug!(target: "app", "find_sensor_value - called with sensor_type = {}, uuid = {}", sensor_type, uuid);
     match sensor::find_sensor_value_by_uuid(db, &uuid, &sensor_type).await {
         Ok(sensor_doc) => {
-            info!(target: "app", "get_sensor - result sensor_doc = {}", sensor_doc);
+            info!(target: "app", "find_sensor_value - result sensor_doc = {}", sensor_doc);
             let value: f64 = match sensor_type.as_str() {
                 "temperature" | "humidity" | "light" | "airpressure" => sensor_doc.get_f64("value").unwrap(),
                 "motion" | "airquality" => sensor_doc.get_i64("value").unwrap() as f64,
@@ -123,7 +123,7 @@ async fn find_sensor_value(db: &State<Database>, uuid: String, sensor_type: Stri
             }
         }
         Err(error) => {
-            error!(target: "app", "get_sensor - error {:?}", error);
+            error!(target: "app", "find_sensor_value - error {:?}", error);
             ApiResponse {
                 json: serde_json::to_value(ApiError {
                     message: "Internal server error".to_string(),
