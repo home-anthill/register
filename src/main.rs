@@ -30,6 +30,7 @@ fn rocket() -> Rocket<Build> {
                 routes::api::post_register_motion,
                 routes::api::post_register_airquality,
                 routes::api::post_register_airpressure,
+                routes::api::post_register_poweroutage,
                 routes::api::get_sensor_value,
                 routes::api::keep_alive,
             ],

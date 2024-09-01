@@ -1,11 +1,11 @@
 use crate::config::Env;
-use std::env;
-use std::future::Future;
 use log::{error, info, warn};
 use mongodb::bson::doc;
 use mongodb::options::{ClientOptions, ServerApi, ServerApiVersion};
 use mongodb::{Client, Database};
 use rocket::fairing::AdHoc;
+use std::env;
+use std::future::Future;
 
 pub mod sensor;
 
@@ -51,7 +51,7 @@ async fn connect(env_config: Env) -> mongodb::error::Result<Database> {
 async fn retry_connect_mongodb<T, E, Fut, F>(mut f: F, retries: usize) -> Result<T, E>
 where
     F: FnMut() -> Fut,
-    Fut: Future<Output=Result<T, E>>,
+    Fut: Future<Output = Result<T, E>>,
 {
     let mut count = 0;
     loop {

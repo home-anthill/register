@@ -21,6 +21,7 @@ GitHub releases [HERE](https://github.com/home-anthill/register/releases)
 
 Versions:
 
+- 01/09/2024 - 1.2.0
 - 31/08/2024 - 1.1.2
 - 20/08/2024 - 1.1.1
 - 20/08/2024 - 1.1.0

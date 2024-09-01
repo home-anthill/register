@@ -60,6 +60,13 @@ pub async fn post_register_airpressure(db: &State<Database>, input: Json<Registe
     insert_register(db, input, "airpressure").await
 }
 
+/// register a new poweroutage sensor
+#[post("/sensors/register/poweroutage", data = "<input>")]
+pub async fn post_register_poweroutage(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
+    info!(target: "app", "REST - POST - post_register_poweroutage");
+    insert_register(db, input, "poweroutage").await
+}
+
 /// get sensor value by UUID and type
 #[get("/sensors/<uuid>/<sensor_type>")]
 pub async fn get_sensor_value(db: &State<Database>, uuid: String, sensor_type: String) -> ApiResponse {
@@ -98,7 +105,7 @@ async fn find_sensor_value(db: &State<Database>, uuid: String, sensor_type: Stri
             info!(target: "app", "find_sensor_value - result sensor_doc = {}", sensor_doc);
             let value: f64 = match sensor_type.as_str() {
                 "temperature" | "humidity" | "light" | "airpressure" => sensor_doc.get_f64("value").unwrap(),
-                "motion" | "airquality" => sensor_doc.get_i64("value").unwrap() as f64,
+                "motion" | "airquality" | "poweroutage" => sensor_doc.get_i64("value").unwrap() as f64,
                 _ => {
                     return ApiResponse {
                         json: serde_json::to_value(ApiError {
