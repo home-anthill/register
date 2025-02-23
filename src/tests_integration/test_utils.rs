@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::prelude::*;
 
 use register::models::inputs::RegisterInput;
 
@@ -19,12 +19,12 @@ pub fn build_register_input(sensor_uuid: &str, mac: &str, profile_owner_id: &str
 
 pub fn get_random_mac() -> String {
     const CHARSET: &[u8] = b"ABCDEF0123456789";
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut mac = String::from("");
     for i in 0..6 {
         let group: String = (0..2)
             .map(|_| {
-                let idx = rng.gen_range(0..CHARSET.len());
+                let idx = rng.random_range(0..CHARSET.len());
                 CHARSET[idx] as char
             })
             .collect();
