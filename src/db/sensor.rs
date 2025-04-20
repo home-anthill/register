@@ -1,12 +1,12 @@
 use log::{debug, error, info};
 
-use mongodb::bson::{doc, Bson, Document};
 use mongodb::Database;
+use mongodb::bson::{Bson, Document, doc};
 use rocket::serde::json::Json;
 
 use crate::errors::db_error::DbError;
 use crate::models::inputs::RegisterInput;
-use crate::models::sensor::{new_from_register_input, FloatSensor, IntSensor};
+use crate::models::sensor::{FloatSensor, IntSensor, new_from_register_input};
 
 pub async fn insert_sensor(db: &Database, input: Json<RegisterInput>, sensor_type: &str) -> Result<String, DbError> {
     info!(target: "app", "insert_sensor - Called with sensor_type = {}", sensor_type);

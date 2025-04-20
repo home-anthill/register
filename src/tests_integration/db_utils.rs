@@ -1,11 +1,11 @@
-use mongodb::bson::{doc, Bson, Document};
+use mongodb::bson::{Bson, Document, doc};
 use mongodb::options::ClientOptions;
 use mongodb::{Client, Database};
 use rocket::serde::json::Json as RocketJson;
 use std::env;
 
 use register::models::inputs::RegisterInput;
-use register::models::sensor::{new_from_register_input, FloatSensor, IntSensor};
+use register::models::sensor::{FloatSensor, IntSensor, new_from_register_input};
 
 pub async fn connect() -> mongodb::error::Result<Database> {
     let mongo_uri = env::var("MONGO_URI").expect("MONGO_URI is not found.");

@@ -5,7 +5,7 @@ use log::info;
 use rocket::{Build, Rocket};
 
 use register::catchers;
-use register::config::{init, Env};
+use register::config::{Env, init};
 use register::db;
 use register::routes;
 
