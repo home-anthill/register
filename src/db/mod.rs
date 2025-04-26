@@ -1,11 +1,13 @@
-use crate::config::Env;
-use log::{error, info, warn};
+use std::env;
+use std::future::Future;
+
 use mongodb::bson::doc;
 use mongodb::options::{ClientOptions, ServerApi, ServerApiVersion};
 use mongodb::{Client, Database};
 use rocket::fairing::AdHoc;
-use std::env;
-use std::future::Future;
+use tracing::{error, info, warn};
+
+use crate::config::Env;
 
 pub mod sensor;
 

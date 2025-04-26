@@ -1,4 +1,4 @@
-use log::error;
+use tracing::error;
 
 use rocket::http::Status;
 use rocket::request::Request;

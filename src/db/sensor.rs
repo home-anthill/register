@@ -1,4 +1,4 @@
-use log::{debug, error, info};
+use tracing::{debug, error, info};
 
 use mongodb::Database;
 use mongodb::bson::{Bson, Document, doc};

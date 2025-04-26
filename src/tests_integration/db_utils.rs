@@ -1,8 +1,9 @@
+use std::env;
+
 use mongodb::bson::{Bson, Document, doc};
 use mongodb::options::ClientOptions;
 use mongodb::{Client, Database};
 use rocket::serde::json::Json as RocketJson;
-use std::env;
 
 use register::models::inputs::RegisterInput;
 use register::models::sensor::{FloatSensor, IntSensor, new_from_register_input};

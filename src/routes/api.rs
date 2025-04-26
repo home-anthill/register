@@ -1,9 +1,9 @@
-use log::{debug, error, info};
 use mongodb::Database;
 use mongodb::bson::doc;
 use rocket::State;
 use rocket::http::Status;
 use rocket::serde::json::{Json, json};
+use tracing::{debug, error, info};
 
 use crate::db::sensor;
 use crate::errors::api_error::{ApiError, ApiResponse};

@@ -1,6 +1,4 @@
-use log::info;
 use std::collections::HashMap;
-use uuid::Uuid;
 
 use super::rocket;
 use mongodb::Database;
@@ -8,6 +6,8 @@ use rocket::http::{ContentType, Status};
 use rocket::local::asynchronous::{Client, LocalRequest, LocalResponse};
 use rocket::serde::json::Json;
 use serde_json::{Value, json};
+use tracing::info;
+use uuid::Uuid;
 
 use crate::tests_integration::db_utils::{
     connect, drop_all_collections, find_sensor_by_uuid, insert_sensor, update_sensor_float_value_by_uuid,

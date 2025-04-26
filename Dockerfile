@@ -46,7 +46,6 @@ WORKDIR /app
 # - environment file
 # - rocket config file
 COPY --from=builder /app/Rocket.toml Rocket.toml
-COPY --from=builder /app/log4rs.yaml log4rs.yaml
 COPY --from=builder /app/.env_template /.env
 COPY --from=builder /app/target/release/register register
 

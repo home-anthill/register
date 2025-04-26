@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate rocket;
 
-use log::info;
 use rocket::{Build, Rocket};
+use tracing::info;
 
 use register::catchers;
 use register::config::{Env, init};
