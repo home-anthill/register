@@ -3,6 +3,7 @@ use rocket::http::{ContentType, Status};
 use rocket::local::asynchronous::{Client, LocalRequest, LocalResponse};
 
 #[rocket::async_test]
+#[test_log::test]
 async fn error_catcher_not_found() {
     let client: Client = Client::tracked(rocket()).await.unwrap();
 
@@ -13,6 +14,7 @@ async fn error_catcher_not_found() {
 }
 
 #[rocket::async_test]
+#[test_log::test]
 async fn error_catcher_bad_request() {
     let client: Client = Client::tracked(rocket()).await.unwrap();
 

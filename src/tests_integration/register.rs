@@ -17,6 +17,7 @@ use crate::tests_integration::test_utils::{build_register_input, create_register
 use register::models::inputs::RegisterInput;
 
 #[rocket::async_test]
+#[test_log::test]
 async fn register_sensor() {
     // init
     let client: Client = Client::tracked(rocket()).await.unwrap();
@@ -62,6 +63,7 @@ async fn register_sensor() {
 }
 
 #[rocket::async_test]
+#[test_log::test]
 async fn register_sensor_error() {
     // init
     let client = Client::tracked(rocket()).await.unwrap();
@@ -102,6 +104,7 @@ async fn register_sensor_error() {
 }
 
 #[rocket::async_test]
+#[test_log::test]
 async fn get_float_sensor_value() {
     // init
     let client: Client = Client::tracked(rocket()).await.unwrap();
@@ -160,6 +163,7 @@ async fn get_float_sensor_value() {
 }
 
 #[rocket::async_test]
+#[test_log::test]
 async fn get_int_sensor_value() {
     // init
     let client: Client = Client::tracked(rocket()).await.unwrap();
