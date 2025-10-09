@@ -9,6 +9,16 @@ use crate::db::sensor;
 use crate::errors::api_error::{ApiError, ApiResponse};
 use crate::models::inputs::RegisterInput;
 
+pub static VALID_SENSOR_TYPES: &[&str] = &[
+    "temperature",
+    "humidity",
+    "light",
+    "motion",
+    "airquality",
+    "airpressure",
+    "poweroutage",
+];
+
 /// keepalive
 #[get("/keepalive")]
 pub async fn keep_alive() -> ApiResponse {
@@ -18,60 +28,34 @@ pub async fn keep_alive() -> ApiResponse {
     }
 }
 
-/// register a new temperature sensor
-#[post("/sensors/register/temperature", data = "<input>")]
-pub async fn post_register_temperature(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
-    info!(target: "app", "REST - POST - post_register_temperature");
-    insert_register(db, input, "temperature").await
+/// register a new sensor
+#[post("/sensors/register/<sensor_type>", data = "<input>")]
+pub async fn post_register(db: &State<Database>, input: Json<RegisterInput>, sensor_type: &str) -> ApiResponse {
+    if VALID_SENSOR_TYPES.contains(&sensor_type) {
+        info!(target: "app", "REST - POST - post_register sensor_type = {}", sensor_type);
+        insert_register(db, input, sensor_type).await
+    } else {
+        ApiResponse {
+            json: serde_json::to_value(ApiError {
+                message: "Invalid sensor type".to_string(),
+                code: Status::BadRequest.code,
+            })
+            .unwrap(),
+            code: Status::BadRequest.code,
+        }
+    }
 }
 
-/// register a new humidity sensor
-#[post("/sensors/register/humidity", data = "<input>")]
-pub async fn post_register_humidity(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
-    info!(target: "app", "REST - POST - post_register_humidity");
-    insert_register(db, input, "humidity").await
-}
-
-/// register a new light sensor
-#[post("/sensors/register/light", data = "<input>")]
-pub async fn post_register_light(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
-    info!(target: "app", "REST - POST - post_register_light");
-    insert_register(db, input, "light").await
-}
-
-/// register a new motion sensor
-#[post("/sensors/register/motion", data = "<input>")]
-pub async fn post_register_motion(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
-    info!(target: "app", "REST - POST - post_register_motion");
-    insert_register(db, input, "motion").await
-}
-
-/// register a new airquality sensor
-#[post("/sensors/register/airquality", data = "<input>")]
-pub async fn post_register_airquality(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
-    info!(target: "app", "REST - POST - post_register_airquality");
-    insert_register(db, input, "airquality").await
-}
-
-/// register a new airpressure sensor
-#[post("/sensors/register/airpressure", data = "<input>")]
-pub async fn post_register_airpressure(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
-    info!(target: "app", "REST - POST - post_register_airpressure");
-    insert_register(db, input, "airpressure").await
-}
-
-/// register a new poweroutage sensor
-#[post("/sensors/register/poweroutage", data = "<input>")]
-pub async fn post_register_poweroutage(db: &State<Database>, input: Json<RegisterInput>) -> ApiResponse {
-    info!(target: "app", "REST - POST - post_register_poweroutage");
-    insert_register(db, input, "poweroutage").await
-}
-
-/// get sensor value by UUID and type
-#[get("/sensors/<uuid>/<sensor_type>")]
-pub async fn get_sensor_value(db: &State<Database>, uuid: String, sensor_type: String) -> ApiResponse {
-    info!(target: "app", "REST - GET - get_sensor_value");
-    find_sensor_value(db, uuid, sensor_type).await
+/// get sensor value by device and feature UUIDs and type
+#[get("/sensors/<device_uuid>/features/<feature_uuid>/<sensor_type>")]
+pub async fn get_sensor_value(
+    db: &State<Database>,
+    device_uuid: &str,
+    feature_uuid: &str,
+    sensor_type: &str,
+) -> ApiResponse {
+    info!(target: "app", "REST - GET - get_sensor_value sensor_type = {}, device_uuid = {}, feature_uuid = {}", sensor_type, device_uuid, feature_uuid);
+    find_sensor_value(db, device_uuid, feature_uuid, sensor_type).await
 }
 
 async fn insert_register(db: &State<Database>, input: Json<RegisterInput>, sensor_type: &str) -> ApiResponse {
@@ -98,12 +82,16 @@ async fn insert_register(db: &State<Database>, input: Json<RegisterInput>, senso
     }
 }
 
-async fn find_sensor_value(db: &State<Database>, uuid: String, sensor_type: String) -> ApiResponse {
-    debug!(target: "app", "find_sensor_value - called with sensor_type = {}, uuid = {}", sensor_type, uuid);
-    match sensor::find_sensor_value_by_uuid(db, &uuid, &sensor_type).await {
+async fn find_sensor_value(
+    db: &State<Database>,
+    device_uuid: &str,
+    feature_uuid: &str,
+    sensor_type: &str,
+) -> ApiResponse {
+    match sensor::find_sensor_value_by_uuid(db, device_uuid, feature_uuid, sensor_type).await {
         Ok(sensor_doc) => {
             info!(target: "app", "find_sensor_value - result sensor_doc = {}", sensor_doc);
-            let value: f64 = match sensor_type.as_str() {
+            let value: f64 = match sensor_type {
                 "temperature" | "humidity" | "light" | "airpressure" => sensor_doc.get_f64("value").unwrap(),
                 "motion" | "airquality" | "poweroutage" => sensor_doc.get_i64("value").unwrap() as f64,
                 _ => {

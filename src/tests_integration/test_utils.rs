@@ -2,19 +2,28 @@ use rand::prelude::*;
 
 use register::models::inputs::RegisterInput;
 
-pub fn create_register_input(sensor_uuid: &str, mac: &str, profile_owner_id: &str) -> RegisterInput {
+pub fn create_register_input(
+    profile_owner_id: &str,
+    device_uuid: &str,
+    mac: &str,
+    feature_uuid: &str,
+) -> RegisterInput {
     RegisterInput {
-        uuid: sensor_uuid.to_string(),
-        mac: mac.to_string(),
-        manufacturer: String::from("ks89"),
-        model: String::from("test-model"),
+        // profile info
         profileOwnerId: profile_owner_id.to_string(),
         apiToken: String::from("473a4861-632b-4915-b01e-cf1d418966c6"),
+        // device info
+        deviceUuid: device_uuid.to_string(),
+        mac: mac.to_string(),
+        model: String::from("test-model"),
+        manufacturer: String::from("ks89"),
+        // feature info
+        featureUuid: feature_uuid.to_string(),
     }
 }
 
-pub fn build_register_input(sensor_uuid: &str, mac: &str, profile_owner_id: &str) -> String {
-    serde_json::to_string(&create_register_input(sensor_uuid, mac, profile_owner_id)).unwrap()
+pub fn build_register_input(profile_owner_id: &str, device_uuid: &str, mac: &str, feature_uuid: &str) -> String {
+    serde_json::to_string(&create_register_input(profile_owner_id, device_uuid, mac, feature_uuid)).unwrap()
 }
 
 pub fn get_random_mac() -> String {

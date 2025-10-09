@@ -11,18 +11,18 @@ use crate::models::sensor::{FloatSensor, IntSensor, new_from_register_input};
 pub async fn insert_sensor(db: &Database, input: Json<RegisterInput>, sensor_type: &str) -> Result<String, DbError> {
     info!(target: "app", "insert_sensor - Called with sensor_type = {}", sensor_type);
 
-    let collection = db.collection::<Document>(sensor_type);
+    let collection = db.collection::<Document>("sensors");
 
     let serialized_input: Bson = match sensor_type {
         "temperature" | "humidity" | "light" | "airpressure" => {
-            let result = new_from_register_input::<FloatSensor>(input);
+            let result = new_from_register_input::<FloatSensor>(input, sensor_type);
             match result {
                 Ok(res) => res,
                 Err(err) => return Err(DbError::new(err.to_string())),
             }
         }
         "motion" | "airquality" | "poweroutage" => {
-            let result = new_from_register_input::<IntSensor>(input);
+            let result = new_from_register_input::<IntSensor>(input, sensor_type);
             match result {
                 Ok(res) => res,
                 Err(err) => return Err(DbError::new(err.to_string())),
@@ -43,18 +43,23 @@ pub async fn insert_sensor(db: &Database, input: Json<RegisterInput>, sensor_typ
 
 pub async fn find_sensor_value_by_uuid(
     db: &Database,
-    uuid: &String,
-    sensor_type: &String,
+    device_uuid: &str,
+    sensor_uuid: &str,
+    sensor_type: &str,
 ) -> Result<Document, DbError> {
-    info!(target: "app", "find_sensor_value_by_uuid - Called with uuid = {}, sensor_type = {}", uuid, sensor_type);
-    let collection = db.collection::<Document>(sensor_type.as_str());
+    info!(target: "app", "find_sensor_value_by_uuid - Called with sensor_type = {}, device_uuid = {}, sensor_uuid = {}", sensor_type, device_uuid, sensor_uuid);
+    let collection = db.collection::<Document>("sensors");
 
     // find by uuid
-    let filter = doc! { "uuid": uuid };
+    let filter = doc! {
+        "deviceUuid": device_uuid,
+        "featureUuid": sensor_uuid,
+        "featureName": sensor_type,
+    };
     // limit the output to {"value", "createdAt" and "modifiedAt"}
     let projection = doc! {"_id": 0, "value": 1, "createdAt": 1, "modifiedAt": 1};
 
-    debug!(target: "app", "find_sensor_value_by_uuid - Getting sensor value with uuid = {} from db", uuid);
+    debug!(target: "app", "find_sensor_value_by_uuid - Getting sensor value with device_uuid = {} and sensor_uuid = {} from db", device_uuid, sensor_uuid);
 
     match collection.find_one(filter).projection(projection).await {
         Ok(doc_result) => match doc_result {

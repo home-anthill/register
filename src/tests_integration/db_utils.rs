@@ -23,39 +23,24 @@ pub async fn connect() -> mongodb::error::Result<Database> {
 }
 
 pub async fn drop_all_collections(db: &Database) -> () {
-    db.collection::<Document>("temperature")
+    db.collection::<Document>("sensors")
         .drop()
         .await
-        .expect("drop 'temperature' collection");
-    db.collection::<Document>("humidity")
-        .drop()
-        .await
-        .expect("drop 'humidity' collection");
-    db.collection::<Document>("light")
-        .drop()
-        .await
-        .expect("drop 'light' collection");
-    db.collection::<Document>("motion")
-        .drop()
-        .await
-        .expect("drop 'motion' collection");
-    db.collection::<Document>("airpressure")
-        .drop()
-        .await
-        .expect("drop 'airpressure' collection");
-    db.collection::<Document>("airquality")
-        .drop()
-        .await
-        .expect("drop 'airquality' collection");
+        .expect("drop 'sensors' collection");
 }
 
 pub async fn find_sensor_by_uuid(
     db: &Database,
-    uuid: &String,
+    device_uuid: &String,
+    feature_uuid: &String,
     sensor_type: &str,
 ) -> mongodb::error::Result<Option<Document>> {
-    let collection = db.collection::<Document>(sensor_type);
-    let filter = doc! { "uuid": uuid };
+    let collection = db.collection::<Document>("sensors");
+    let filter = doc! {
+        "deviceUuid": device_uuid,
+        "featureUuid": feature_uuid,
+        "featureName": sensor_type,
+    };
     collection.find_one(filter).await
 }
 
@@ -64,10 +49,10 @@ pub async fn insert_sensor(
     input: RocketJson<RegisterInput>,
     sensor_type: &str,
 ) -> mongodb::error::Result<String> {
-    let collection = db.collection::<Document>(sensor_type);
+    let collection = db.collection::<Document>("sensors");
     let serialized_data: Bson = match sensor_type {
-        "temperature" | "humidity" | "light" => new_from_register_input::<FloatSensor>(input).unwrap(),
-        "motion" | "airquality" | "airpressure" => new_from_register_input::<IntSensor>(input).unwrap(),
+        "temperature" | "humidity" | "light" => new_from_register_input::<FloatSensor>(input, sensor_type).unwrap(),
+        "motion" | "airquality" | "airpressure" => new_from_register_input::<IntSensor>(input, sensor_type).unwrap(),
         _ => {
             panic!("Unknown type")
         }
@@ -79,24 +64,34 @@ pub async fn insert_sensor(
 
 pub async fn update_sensor_float_value_by_uuid(
     db: &Database,
-    uuid: &String,
+    device_uuid: &String,
+    feature_uuid: &String,
     sensor_type: &str,
     value: f64,
 ) -> mongodb::error::Result<Option<Document>> {
-    let collection = db.collection::<Document>(sensor_type);
-    let filter = doc! { "uuid": uuid };
+    let collection = db.collection::<Document>("sensors");
+    let filter = doc! {
+        "deviceUuid": device_uuid,
+        "featureUuid": feature_uuid,
+        "featureName": sensor_type
+    };
     let update = doc! {"$set": {"value": value}};
     collection.find_one_and_update(filter.clone(), update).await
 }
 
 pub async fn update_sensor_int_value_by_uuid(
     db: &Database,
-    uuid: &String,
+    device_uuid: &String,
+    feature_uuid: &String,
     sensor_type: &str,
     value: i64,
 ) -> mongodb::error::Result<Option<Document>> {
-    let collection = db.collection::<Document>(sensor_type);
-    let filter = doc! { "uuid": uuid };
+    let collection = db.collection::<Document>("sensors");
+    let filter = doc! {
+        "deviceUuid": device_uuid,
+        "featureUuid": feature_uuid,
+        "featureName": sensor_type
+    };
     let update = doc! {"$set": {"value": value}};
     collection.find_one_and_update(filter.clone(), update).await
 }

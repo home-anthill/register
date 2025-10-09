@@ -24,13 +24,7 @@ fn rocket() -> Rocket<Build> {
         .mount(
             "/",
             routes![
-                routes::api::post_register_temperature,
-                routes::api::post_register_humidity,
-                routes::api::post_register_light,
-                routes::api::post_register_motion,
-                routes::api::post_register_airquality,
-                routes::api::post_register_airpressure,
-                routes::api::post_register_poweroutage,
+                routes::api::post_register,
                 routes::api::get_sensor_value,
                 routes::api::keep_alive,
             ],
