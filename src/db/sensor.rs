@@ -21,7 +21,7 @@ pub async fn insert_sensor(db: &Database, input: Json<RegisterInput>, sensor_typ
                 Err(err) => return Err(DbError::new(err.to_string())),
             }
         }
-        "motion" | "airquality" | "poweroutage" => {
+        "motion" | "airquality" | "online" => {
             let result = new_from_register_input::<IntSensor>(input, sensor_type);
             match result {
                 Ok(res) => res,

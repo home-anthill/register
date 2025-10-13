@@ -16,7 +16,7 @@ pub static VALID_SENSOR_TYPES: &[&str] = &[
     "motion",
     "airquality",
     "airpressure",
-    "poweroutage",
+    "online",
 ];
 
 /// keepalive
@@ -93,7 +93,7 @@ async fn find_sensor_value(
             info!(target: "app", "find_sensor_value - result sensor_doc = {}", sensor_doc);
             let value: f64 = match sensor_type {
                 "temperature" | "humidity" | "light" | "airpressure" => sensor_doc.get_f64("value").unwrap(),
-                "motion" | "airquality" | "poweroutage" => sensor_doc.get_i64("value").unwrap() as f64,
+                "motion" | "airquality" | "online" => sensor_doc.get_i64("value").unwrap() as f64,
                 _ => {
                     return ApiResponse {
                         json: serde_json::to_value(ApiError {
