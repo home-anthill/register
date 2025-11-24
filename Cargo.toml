@@ -20,7 +20,7 @@ panic = "abort"
 
 [dependencies]
 rocket = { version = "0.5.1", features = ["uuid", "secrets", "json"] }
-mongodb = "^3.3.0"
+mongodb = "^3.4.1"
 tracing = "^0.1.41"
 tracing-appender = "^0.2.3"
 tracing-subscriber = { version = "^0.3.20", features = ["env-filter"] }
