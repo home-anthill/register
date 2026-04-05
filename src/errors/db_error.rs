@@ -1,12 +1,13 @@
-use rocket::serde::{Deserialize, Serialize};
-
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DbError {
-    pub message: String,
+#[derive(Debug, thiserror::Error)]
+pub enum DbError {
+    #[error("document already exists")]
+    AlreadyExists,
+    #[error("{0}")]
+    Other(String),
 }
 
 impl DbError {
-    pub fn new(message: String) -> Self {
-        Self { message }
+    pub fn other(message: impl Into<String>) -> Self {
+        Self::Other(message.into())
     }
 }

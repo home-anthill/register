@@ -1,83 +1,71 @@
+use std::str::FromStr;
+
 use mongodb::Database;
-use mongodb::bson::doc;
+use mongodb::bson::Document;
 use rocket::State;
 use rocket::http::Status;
 use rocket::serde::json::{Json, json};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use crate::db::sensor;
-use crate::errors::api_error::{ApiError, ApiResponse};
-use crate::models::inputs::RegisterInput;
-
-pub static VALID_SENSOR_TYPES: &[&str] = &[
-    "temperature",
-    "humidity",
-    "light",
-    "motion",
-    "airquality",
-    "airpressure",
-    "online",
-];
+use crate::errors::api_error::ApiResponse;
+use crate::errors::db_error::DbError;
+use crate::models::feature_name::FeatureName;
+use crate::models::inputs::{RegisterInput, validate_uuid_field};
 
 /// keepalive
-#[get("/keepalive")]
-pub async fn keep_alive() -> ApiResponse {
-    ApiResponse {
-        json: json!({ "alive": true }),
-        code: Status::Ok.code,
-    }
+#[rocket::get("/keepalive")]
+pub fn keep_alive() -> ApiResponse {
+    ApiResponse { json: json!({ "alive": true }), status: Status::Ok }
 }
 
 /// register a new sensor
-#[post("/sensors/register/<sensor_type>", data = "<input>")]
-pub async fn post_register(db: &State<Database>, input: Json<RegisterInput>, sensor_type: &str) -> ApiResponse {
-    if VALID_SENSOR_TYPES.contains(&sensor_type) {
-        info!(target: "app", "REST - POST - post_register sensor_type = {}", sensor_type);
-        insert_register(db, input, sensor_type).await
-    } else {
-        ApiResponse {
-            json: serde_json::to_value(ApiError {
-                message: "Invalid sensor type".to_string(),
-                code: Status::BadRequest.code,
-            })
-            .unwrap(),
-            code: Status::BadRequest.code,
-        }
+#[rocket::post("/sensors/register/<feature_name>", data = "<input>")]
+pub async fn post_register(db: &State<Database>, input: Json<RegisterInput>, feature_name: &str) -> ApiResponse {
+    let Ok(feature_name) = FeatureName::from_str(feature_name) else {
+        return bad_request("Invalid sensor type");
+    };
+    if let Err(e) = input.validate() {
+        return bad_request(&e.to_string());
     }
+    info!(target: "app", "REST - POST - post_register feature_name = {}, device_uuid = {}, feature_uuid = {}", feature_name, input.device_uuid, input.feature_uuid);
+    insert_register(db, input.into_inner(), feature_name).await
 }
 
 /// get sensor value by device and feature UUIDs and type
-#[get("/sensors/<device_uuid>/features/<feature_uuid>/<sensor_type>")]
+#[rocket::get("/sensors/<device_uuid>/features/<feature_uuid>/<feature_name>")]
 pub async fn get_sensor_value(
     db: &State<Database>,
     device_uuid: &str,
     feature_uuid: &str,
-    sensor_type: &str,
+    feature_name: &str,
 ) -> ApiResponse {
-    info!(target: "app", "REST - GET - get_sensor_value sensor_type = {}, device_uuid = {}, feature_uuid = {}", sensor_type, device_uuid, feature_uuid);
-    find_sensor_value(db, device_uuid, feature_uuid, sensor_type).await
+    let Ok(feature_name) = FeatureName::from_str(feature_name) else {
+        return bad_request("Invalid sensor type");
+    };
+    if let Err(e) = validate_uuid_field(device_uuid, "device_uuid") {
+        return bad_request(&e.to_string());
+    }
+    if let Err(e) = validate_uuid_field(feature_uuid, "feature_uuid") {
+        return bad_request(&e.to_string());
+    }
+    info!(target: "app", "REST - GET - get_sensor_value feature_name = {}, device_uuid = {}, feature_uuid = {}", feature_name, device_uuid, feature_uuid);
+    find_sensor_value(db, device_uuid, feature_uuid, feature_name).await
 }
 
-async fn insert_register(db: &State<Database>, input: Json<RegisterInput>, sensor_type: &str) -> ApiResponse {
-    debug!(target: "app", "insert_register - called with sensor_type = {}", sensor_type);
-    match sensor::insert_sensor(db, input, sensor_type).await {
+async fn insert_register(db: &State<Database>, input: RegisterInput, feature_name: FeatureName) -> ApiResponse {
+    match sensor::insert_sensor(db, input, feature_name).await {
         Ok(register_doc_id) => {
             debug!(target: "app", "insert_register - document inserted with id = {}", register_doc_id);
-            ApiResponse {
-                json: json!({ "id": register_doc_id }),
-                code: Status::Ok.code,
-            }
+            ApiResponse { json: json!({ "id": register_doc_id }), status: Status::Ok }
+        }
+        Err(DbError::AlreadyExists) => {
+            warn!(target: "app", "insert_register - sensor already registered");
+            error_response(Status::Conflict, "Sensor already registered")
         }
         Err(error) => {
-            error!(target: "app", "insert_register - error = {:?}", error);
-            ApiResponse {
-                json: serde_json::to_value(ApiError {
-                    message: "Invalid input".to_string(),
-                    code: Status::BadRequest.code,
-                })
-                .unwrap(),
-                code: Status::BadRequest.code,
-            }
+            error!(target: "app", "insert_register - error = {}", error);
+            internal_error()
         }
     }
 }
@@ -86,47 +74,64 @@ async fn find_sensor_value(
     db: &State<Database>,
     device_uuid: &str,
     feature_uuid: &str,
-    sensor_type: &str,
+    feature_name: FeatureName,
 ) -> ApiResponse {
-    match sensor::find_sensor_value_by_uuid(db, device_uuid, feature_uuid, sensor_type).await {
+    match sensor::find_sensor_value_by_uuid(db, device_uuid, feature_uuid, feature_name).await {
         Ok(sensor_doc) => {
-            info!(target: "app", "find_sensor_value - result sensor_doc = {}", sensor_doc);
-            let value: f64 = match sensor_type {
-                "temperature" | "humidity" | "light" | "airpressure" => sensor_doc.get_f64("value").unwrap(),
-                "motion" | "airquality" | "online" => sensor_doc.get_i64("value").unwrap() as f64,
-                _ => {
-                    return ApiResponse {
-                        json: serde_json::to_value(ApiError {
-                            message: "Unknown sensor type".to_string(),
-                            code: Status::InternalServerError.code,
-                        })
-                        .unwrap(),
-                        code: Status::InternalServerError.code,
-                    };
-                }
-            };
-            let created_at = sensor_doc.get_datetime("createdAt").unwrap().timestamp_millis();
-            let modified_at = sensor_doc.get_datetime("modifiedAt").unwrap().timestamp_millis();
-            ApiResponse {
-                json: json!({
-                    // in json response, 'value' is always a f64, even if in db it's a i64
-                    "value": value,
-                    "createdAt": created_at,
-                    "modifiedAt": modified_at,
-                }),
-                code: Status::Ok.code,
-            }
+            debug!(target: "app", "find_sensor_value - sensor document found");
+            build_sensor_response(feature_name, &sensor_doc).unwrap_or_else(|e| e)
         }
         Err(error) => {
-            error!(target: "app", "find_sensor_value - error {:?}", error);
-            ApiResponse {
-                json: serde_json::to_value(ApiError {
-                    message: "Internal server error".to_string(),
-                    code: Status::InternalServerError.code,
-                })
-                .unwrap(),
-                code: Status::InternalServerError.code,
-            }
+            error!(target: "app", "find_sensor_value - error {}", error);
+            internal_error()
         }
     }
+}
+
+fn build_sensor_response(feature_name: FeatureName, doc: &Document) -> Result<ApiResponse, ApiResponse> {
+    let value = if feature_name.is_float() {
+        let v = doc.get_f64("value").map_err(|err| {
+            debug!(target: "app", "find_sensor_value - failed to get f64 value: {}", err);
+            error!(target: "app", "find_sensor_value - unexpected value type in document");
+            internal_error()
+        })?;
+        json!(v)
+    } else {
+        let v = doc.get_i64("value").map_err(|err| {
+            debug!(target: "app", "find_sensor_value - failed to get i64 value: {}", err);
+            error!(target: "app", "find_sensor_value - unexpected value type in document");
+            internal_error()
+        })?;
+        json!(v)
+    };
+    let created_at = doc.get_datetime("createdAt").map(|dt| dt.timestamp_millis()).map_err(|err| {
+        debug!(target: "app", "find_sensor_value - failed to get createdAt: {}", err);
+        error!(target: "app", "find_sensor_value - unexpected createdAt type in document");
+        internal_error()
+    })?;
+    let modified_at = doc.get_datetime("modifiedAt").map(|dt| dt.timestamp_millis()).map_err(|err| {
+        debug!(target: "app", "find_sensor_value - failed to get modifiedAt: {}", err);
+        error!(target: "app", "find_sensor_value - unexpected modifiedAt type in document");
+        internal_error()
+    })?;
+    Ok(ApiResponse {
+        json: json!({
+            "value": value,
+            "createdAt": created_at,
+            "modifiedAt": modified_at,
+        }),
+        status: Status::Ok,
+    })
+}
+
+fn error_response(status: Status, message: &str) -> ApiResponse {
+    ApiResponse { json: json!({ "message": message, "code": status.code }), status }
+}
+
+fn internal_error() -> ApiResponse {
+    error_response(Status::InternalServerError, "Internal server error")
+}
+
+fn bad_request(message: &str) -> ApiResponse {
+    error_response(Status::BadRequest, message)
 }

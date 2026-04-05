@@ -1,33 +1,30 @@
-use tracing::error;
+use tracing::{error, warn};
 
 use rocket::http::Status;
 use rocket::request::Request;
 
 use crate::errors::api_error::ApiError;
 
-#[catch(400)]
+#[rocket::catch(400)]
 pub fn bad_request(_: &Request) -> ApiError {
-    error!(target: "app", "catcher 400 - bad_request");
-    ApiError {
-        code: Status::BadRequest.code,
-        message: "Bad request".to_string(),
-    }
+    warn!(target: "app", "catcher 400 - bad_request");
+    ApiError { code: Status::BadRequest.code, message: "Bad request".into() }
 }
 
-#[catch(404)]
+#[rocket::catch(404)]
 pub fn not_found(_: &Request) -> ApiError {
-    error!(target: "app", "catcher 404 - not_found");
-    ApiError {
-        code: Status::NotFound.code,
-        message: "Not found".to_string(),
-    }
+    warn!(target: "app", "catcher 404 - not_found");
+    ApiError { code: Status::NotFound.code, message: "Not found".into() }
 }
 
-#[catch(500)]
+#[rocket::catch(500)]
 pub fn internal_server_error(_: &Request) -> ApiError {
     error!(target: "app", "catcher 500 - internal_server_error");
-    ApiError {
-        code: Status::InternalServerError.code,
-        message: "Internal server error".to_string(),
-    }
+    ApiError { code: Status::InternalServerError.code, message: "Internal server error".into() }
+}
+
+#[rocket::catch(503)]
+pub fn service_unavailable(_: &Request) -> ApiError {
+    error!(target: "app", "catcher 503 - service_unavailable");
+    ApiError { code: Status::ServiceUnavailable.code, message: "Service Unavailable".into() }
 }

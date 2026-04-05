@@ -1,71 +1,66 @@
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 
 use mongodb::Database;
 use mongodb::bson::{Bson, Document, doc};
-use rocket::serde::json::Json;
+use mongodb::error::{ErrorKind, WriteFailure};
 
 use crate::errors::db_error::DbError;
+use crate::models::feature_name::FeatureName;
 use crate::models::inputs::RegisterInput;
-use crate::models::sensor::{FloatSensor, IntSensor, new_from_register_input};
 
-pub async fn insert_sensor(db: &Database, input: Json<RegisterInput>, sensor_type: &str) -> Result<String, DbError> {
-    info!(target: "app", "insert_sensor - Called with sensor_type = {}", sensor_type);
+use super::COLLECTION_NAME;
 
-    let collection = db.collection::<Document>("sensors");
+pub async fn insert_sensor(db: &Database, input: RegisterInput, feature_name: FeatureName) -> Result<String, DbError> {
+    debug!(target: "app", "insert_sensor - Called with feature_name = {}, device_uuid = {}, feature_uuid = {}", feature_name, input.device_uuid, input.feature_uuid);
 
-    let serialized_input: Bson = match sensor_type {
-        "temperature" | "humidity" | "light" | "airpressure" => {
-            let result = new_from_register_input::<FloatSensor>(input, sensor_type);
-            match result {
-                Ok(res) => res,
-                Err(err) => return Err(DbError::new(err.to_string())),
-            }
-        }
-        "motion" | "airquality" | "online" => {
-            let result = new_from_register_input::<IntSensor>(input, sensor_type);
-            match result {
-                Ok(res) => res,
-                Err(err) => return Err(DbError::new(err.to_string())),
-            }
-        }
-        _ => {
-            error!(target: "app", "insert_sensor - Unknown sensor_type = {}", sensor_type);
-            return Err(DbError::new(format!("Unknown sensor_type = {}", sensor_type)));
-        }
-    };
+    let collection = db.collection::<Document>(COLLECTION_NAME);
+
+    let serialized_input: Bson = input.into_sensor_bson(feature_name).map_err(|e| DbError::other(e.to_string()))?;
 
     debug!(target: "app", "insert_sensor - Adding sensor into db");
 
-    let document = serialized_input.as_document().unwrap();
-    let insert_one_result = collection.insert_one(document.to_owned()).await.unwrap();
-    Ok(insert_one_result.inserted_id.as_object_id().unwrap().to_hex())
+    let Bson::Document(document) = serialized_input else {
+        return Err(DbError::other("Failed to convert sensor to BSON document"));
+    };
+    let insert_one_result = collection.insert_one(document).await.map_err(|err| {
+        if matches!(err.kind.as_ref(), ErrorKind::Write(WriteFailure::WriteError(we)) if we.code == 11000) {
+            return DbError::AlreadyExists;
+        }
+        error!(target: "app", "insert_sensor - MongoDB error: {}", err);
+        DbError::other("Database operation failed")
+    })?;
+    let object_id = insert_one_result
+        .inserted_id
+        .as_object_id()
+        .ok_or_else(|| DbError::other("Inserted ID is not a valid ObjectId"))?;
+    Ok(object_id.to_hex())
 }
 
 pub async fn find_sensor_value_by_uuid(
     db: &Database,
     device_uuid: &str,
-    sensor_uuid: &str,
-    sensor_type: &str,
+    feature_uuid: &str,
+    feature_name: FeatureName,
 ) -> Result<Document, DbError> {
-    info!(target: "app", "find_sensor_value_by_uuid - Called with sensor_type = {}, device_uuid = {}, sensor_uuid = {}", sensor_type, device_uuid, sensor_uuid);
-    let collection = db.collection::<Document>("sensors");
-
-    // find by uuid
+    debug!(target: "app", "find_sensor_value_by_uuid - Called with feature_name = {}, device_uuid = {}, feature_uuid = {}", feature_name, device_uuid, feature_uuid);
+    let collection = db.collection::<Document>(COLLECTION_NAME);
     let filter = doc! {
         "deviceUuid": device_uuid,
-        "featureUuid": sensor_uuid,
-        "featureName": sensor_type,
+        "featureUuid": feature_uuid,
+        "featureName": feature_name.as_str(),
     };
     // limit the output to {"value", "createdAt" and "modifiedAt"}
     let projection = doc! {"_id": 0, "value": 1, "createdAt": 1, "modifiedAt": 1};
 
-    debug!(target: "app", "find_sensor_value_by_uuid - Getting sensor value with device_uuid = {} and sensor_uuid = {} from db", device_uuid, sensor_uuid);
+    debug!(target: "app", "find_sensor_value_by_uuid - Querying sensor value from db");
 
-    match collection.find_one(filter).projection(projection).await {
-        Ok(doc_result) => match doc_result {
-            Some(doc) => Ok(doc),
-            None => Err(DbError::new(String::from("Cannot find sensor"))),
-        },
-        Err(err) => Err(DbError::new(err.to_string())),
-    }
+    collection
+        .find_one(filter)
+        .projection(projection)
+        .await
+        .map_err(|err| {
+            error!(target: "app", "find_sensor_value_by_uuid - MongoDB error: {}", err);
+            DbError::other("Database operation failed")
+        })?
+        .ok_or_else(|| DbError::other("Cannot find sensor"))
 }
