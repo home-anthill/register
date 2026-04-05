@@ -7,7 +7,7 @@ FROM rust:trixie AS chef
 RUN apt-get update && apt-get install -y \
     g++ \
     openssl \
-    make cmake \
+    make cmake
 
 WORKDIR /app
 
