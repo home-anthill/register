@@ -2,6 +2,7 @@
 
 ## Security
 
+- Fixed `Env` custom `Debug` implementation to redact `mongo_uri`, matching the intended MongoDB URI logging hardening.
 - MongoDB URI credentials and sensitive query params redacted in all logs; custom `Debug` impl for `Env` also redacts `mongo_uri`
 - `AppEnv` enum centralises `ENV` var reading; `from_env()` called exactly once at startup (eliminates TOCTOU window)
 - Connection failure uses graceful abort instead of `panic!`; panic messages never contain error details

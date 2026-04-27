@@ -44,7 +44,7 @@ impl fmt::Debug for Env {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Env")
             .field("log_level", &self.log_level)
-            .field("mongo_uri", &self.mongo_uri)
+            .field("mongo_uri", &"[REDACTED]")
             .field("mongo_db_name", &self.mongo_db_name)
             .field("mongo_max_retries", &self.mongo_max_retries)
             .finish()
@@ -106,4 +106,25 @@ fn print_env(env: &Env) {
     info!(target: "app", "mongo_uri = [REDACTED]");
     info!(target: "app", "mongo_db_name = {}", env.mongo_db_name);
     info!(target: "app", "mongo_max_retries = {}", env.mongo_max_retries.unwrap_or(50));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Env;
+
+    #[test]
+    fn env_debug_redacts_mongo_uri() {
+        let env = Env {
+            log_level: Some("debug".to_string()),
+            mongo_uri: "mongodb://user:password@localhost:27017/sensors".to_string(),
+            mongo_db_name: "sensors".to_string(),
+            mongo_max_retries: Some(3),
+        };
+
+        let debug = format!("{env:?}");
+
+        assert!(debug.contains("mongo_uri: \"[REDACTED]\""));
+        assert!(!debug.contains("password"));
+        assert!(!debug.contains("mongodb://user"));
+    }
 }

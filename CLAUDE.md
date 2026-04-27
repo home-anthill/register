@@ -78,6 +78,7 @@ All errors return JSON `{message: string, code: number}`. Examples:
 - No `unwrap()` in production code — use `?` with `map_err`, `ok_or_else`, or `expect` with descriptive messages
 - Prefer `&str` over `&String` in function parameters
 - Error logging uses `{}` (Display), never `{:?}` (Debug), to avoid leaking internal driver details; MongoDB operation errors are logged at `error!` level
+- `Env` has a custom `Debug` implementation and must keep `mongo_uri` redacted as `[REDACTED]`; do not derive `Debug` for it without preserving redaction.
 - `apiToken` is stored in MongoDB as-received (plaintext). Hashing is a known open item — do not add SHA-256 hashing without also updating the `consumer` service to hash before querying.
 - MAC addresses are normalized to **uppercase** on insert (`to_ascii_uppercase()`).
 - New sensors are always inserted with `value = 0` (type default). The `consumer` service updates the `value`, `createdAt`, and `modifiedAt` fields later.
