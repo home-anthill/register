@@ -35,6 +35,8 @@ pub struct Env {
     pub log_level: Option<String>,
     pub mongo_uri: String,
     pub mongo_db_name: String,
+    pub api_token_hash_secret: String,
+    pub api_token_encryption_key: String,
     /// Maximum number of retry attempts after the first MongoDB connection try.
     /// Total attempts = mongo_max_retries + 1. Defaults to 50 when absent.
     pub mongo_max_retries: Option<u32>,
@@ -46,6 +48,8 @@ impl fmt::Debug for Env {
             .field("log_level", &self.log_level)
             .field("mongo_uri", &"[REDACTED]")
             .field("mongo_db_name", &self.mongo_db_name)
+            .field("api_token_hash_secret", &"[REDACTED]")
+            .field("api_token_encryption_key", &"[REDACTED]")
             .field("mongo_max_retries", &self.mongo_max_retries)
             .finish()
     }
@@ -105,6 +109,8 @@ fn print_env(env: &Env) {
     info!(target: "app", "log_level = {}", env.log_level.as_deref().unwrap_or("debug"));
     info!(target: "app", "mongo_uri = [REDACTED]");
     info!(target: "app", "mongo_db_name = {}", env.mongo_db_name);
+    info!(target: "app", "api_token_hash_secret = [REDACTED]");
+    info!(target: "app", "api_token_encryption_key = [REDACTED]");
     info!(target: "app", "mongo_max_retries = {}", env.mongo_max_retries.unwrap_or(50));
 }
 
@@ -118,13 +124,19 @@ mod tests {
             log_level: Some("debug".to_string()),
             mongo_uri: "mongodb://user:password@localhost:27017/sensors".to_string(),
             mongo_db_name: "sensors".to_string(),
+            api_token_hash_secret: "hash-secret".to_string(),
+            api_token_encryption_key: "encryption-key".to_string(),
             mongo_max_retries: Some(3),
         };
 
         let debug = format!("{env:?}");
 
         assert!(debug.contains("mongo_uri: \"[REDACTED]\""));
+        assert!(debug.contains("api_token_hash_secret: \"[REDACTED]\""));
+        assert!(debug.contains("api_token_encryption_key: \"[REDACTED]\""));
         assert!(!debug.contains("password"));
         assert!(!debug.contains("mongodb://user"));
+        assert!(!debug.contains("hash-secret"));
+        assert!(!debug.contains("encryption-key"));
     }
 }

@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::feature_name::FeatureName;
 use crate::models::inputs::RegisterInput;
+use crate::utils_api_token::encrypt_api_token;
+use crate::utils_api_token::hash_api_token;
 
 #[derive(Debug, thiserror::Error)]
 pub enum SensorError {
@@ -13,6 +15,8 @@ pub enum SensorError {
     InvalidObjectId(#[from] mongodb::bson::oid::Error),
     #[error("BSON serialization failed: {0}")]
     BsonSerialize(#[from] mongodb::bson::ser::Error),
+    #[error("api token crypto failed: {0}")]
+    ApiTokenCrypto(String),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -21,7 +25,8 @@ pub struct Sensor<V> {
     #[serde(rename = "_id")]
     pub id: ObjectId,
     pub profile_owner_id: ObjectId,
-    pub api_token: String,
+    pub api_token_hash: String,
+    pub api_token_encrypted: String,
     pub device_uuid: String,
     pub mac: String,
     pub model: String,
@@ -46,12 +51,13 @@ impl<V: Default> Sensor<V> {
         manufacturer: String,
         feature_uuid: String,
         feature_name: String,
-    ) -> Self {
+    ) -> Result<Self, SensorError> {
         let now = DateTime::now();
-        Self {
+        Ok(Self {
             id: ObjectId::new(),
             profile_owner_id,
-            api_token,
+            api_token_hash: hash_api_token(&api_token).map_err(SensorError::ApiTokenCrypto)?,
+            api_token_encrypted: encrypt_api_token(&api_token).map_err(SensorError::ApiTokenCrypto)?,
             device_uuid,
             mac,
             model,
@@ -61,7 +67,7 @@ impl<V: Default> Sensor<V> {
             value: V::default(),
             created_at: now,
             modified_at: now,
-        }
+        })
     }
 }
 
@@ -85,7 +91,7 @@ impl RegisterInput {
                 manufacturer,
                 feature_uuid,
                 feature_name_str,
-            ))?
+            )?)?
         } else {
             to_bson(&Sensor::<i64>::new(
                 profile_owner_id,
@@ -96,7 +102,7 @@ impl RegisterInput {
                 manufacturer,
                 feature_uuid,
                 feature_name_str,
-            ))?
+            )?)?
         };
         Ok(bson)
     }

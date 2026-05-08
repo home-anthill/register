@@ -12,6 +12,7 @@
 - `ApiError::respond_to` emits full `{message, code}` JSON (previously dropped the `code` field)
 - All log sites use `{}` (Display) instead of `{:?}` (Debug) to avoid leaking driver internals
 - `validate()` enforces ObjectId format for `profileOwnerId`, UUID v4 for `deviceUuid`/`featureUuid`/`apiToken`, `XX:XX:XX:XX:XX:XX` MAC format, and bounded non-empty ASCII strings for `model`/`manufacturer`
+- Sensor registration now stores `apiTokenHash` plus AES-GCM `apiTokenEncrypted` instead of plaintext `apiToken`; both `API_TOKEN_HASH_SECRET` and `API_TOKEN_ENCRYPTION_KEY` are mandatory with no fallback secrets.
 - MAC address normalized to uppercase on insert
 - GET endpoint validates all path parameters before touching the database; user-supplied UUIDs removed from `info!`-level logs
 - JSON body limit set to 8 KiB

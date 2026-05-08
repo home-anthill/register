@@ -35,7 +35,7 @@ Tests require a running MongoDB instance (see `.env_template` for `MONGO_URI`). 
 
 **Key modules:**
 - `models/feature_name.rs` — `FeatureName` enum (temperature, humidity, light, motion, airquality, airpressure, online) with `is_float()` method (determines whether values are f64 or i64), `as_str()`, `Display`, `FromStr` (returning `InvalidFeatureName` error), and `ALL` constant slice; `InvalidFeatureName` is a unit struct error type via `thiserror`.
-- `models/sensor.rs` — generic `Sensor<V>` struct with fields `deviceUuid`, `featureUuid`, `featureName`, `value`, `createdAt`, `modifiedAt`; type aliases `IntSensor = Sensor<i64>` and `FloatSensor = Sensor<f64>`; `RegisterInput::into_sensor_bson()` converts request to BSON; `SensorError` typed error.
+- `models/sensor.rs` — generic `Sensor<V>` struct with fields `apiTokenHash`, `apiTokenEncrypted`, `deviceUuid`, `featureUuid`, `featureName`, `value`, `createdAt`, `modifiedAt`; type aliases `IntSensor = Sensor<i64>` and `FloatSensor = Sensor<f64>`; `RegisterInput::into_sensor_bson()` converts request to BSON; `SensorError` typed error.
 - `models/inputs.rs` — `RegisterInput` struct with snake_case JSON fields renamed to camelCase (`#[serde(rename_all = "camelCase")]`); `validate()` method (called by route handlers before DB operations); `validate_uuid_field()` public fn that requires UUID v4 format; `profileOwnerId` validated via `ObjectId::from_str()`. Validation errors return 400 with JSON body.
 - `db/mod.rs` — MongoDB connection initialization and lifecycle (`init()` attaches DB handler to Rocket). Ensures the unique compound index `(deviceUuid, featureUuid, featureName)` on startup (if conflict code 86 occurs, drops and recreates). Shared `pub COLLECTION_NAME` constant used by both production code and test helpers.
 - `db/sensor.rs` — database operations: `insert()` (checks for existing doc via error code 11000, converts to `DbError::AlreadyExists`), `find_by_uuid()` (returns `Option<Document>`, routes extract and cast `value` as i64 or f64 based on feature type).
@@ -79,7 +79,7 @@ All errors return JSON `{message: string, code: number}`. Examples:
 - Prefer `&str` over `&String` in function parameters
 - Error logging uses `{}` (Display), never `{:?}` (Debug), to avoid leaking internal driver details; MongoDB operation errors are logged at `error!` level
 - `Env` has a custom `Debug` implementation and must keep `mongo_uri` redacted as `[REDACTED]`; do not derive `Debug` for it without preserving redaction.
-- `apiToken` is stored in MongoDB as-received (plaintext). Hashing is a known open item — do not add SHA-256 hashing without also updating the `consumer` service to hash before querying.
+- `apiToken` from registration requests is never stored plaintext. Sensor documents store `apiTokenHash` (HMAC-SHA-256 with `API_TOKEN_HASH_SECRET`) for lookup and `apiTokenEncrypted` (AES-GCM with `API_TOKEN_ENCRYPTION_KEY`) so consumers can verify signed MQTT payloads.
 - MAC addresses are normalized to **uppercase** on insert (`to_ascii_uppercase()`).
 - New sensors are always inserted with `value = 0` (type default). The `consumer` service updates the `value`, `createdAt`, and `modifiedAt` fields later.
 - Float sensors (f64): `temperature`, `humidity`, `light`, `airpressure`. Integer sensors (i64): `motion`, `airquality`, `online`. This is governed by `FeatureName::is_float()`.
@@ -87,7 +87,7 @@ All errors return JSON `{message: string, code: number}`. Examples:
 ## Configuration
 
 - `Rocket.toml` — server config (debug mode: port 8000, release mode: port 80); JSON body limit set to 8 KiB for both profiles
-- `.env_template` — template file (gitignored `.env` is copied from this). Required vars: `MONGO_URI` (e.g. `mongodb://localhost:27017`), `MONGO_DB_NAME` (database name, ignored in test mode). Optional: `LOG_LEVEL` (debug/info/warn/error, default: debug), `MONGO_MAX_RETRIES` (integer retries after first attempt, default: 50)
+- `.env_template` — template file (gitignored `.env` is copied from this). Required vars: `MONGO_URI` (e.g. `mongodb://localhost:27017`), `MONGO_DB_NAME` (database name, ignored in test mode), `API_TOKEN_HASH_SECRET`, `API_TOKEN_ENCRYPTION_KEY`. Optional: `LOG_LEVEL` (debug/info/warn/error, default: debug), `MONGO_MAX_RETRIES` (integer retries after first attempt, default: 50)
 - `config/mod.rs` — `init()` function reads env vars exactly once at startup and returns `(Env, AppEnv)` tuple. `AppEnv` is `Copy + Clone` so it's cheap to pass around. The function also sets up the tracing subscriber (file logging in production, console in tests)
 - **Test database isolation**: when `ENV=testing`, the service ignores `MONGO_DB_NAME` and uses hardcoded `sensors_test` database. This prevents test runs from corrupting production data. Integration tests assume a real MongoDB instance is running (no mocking).
 - **Logging behavior**:
@@ -96,7 +96,7 @@ All errors return JSON `{message: string, code: number}`. Examples:
 
 ## Security Notes
 
-- `apiToken` is stored in MongoDB in plaintext. Any future hashing implementation must be applied consistently in both this service and `consumer`. See open item in Code Conventions.
+- API token secrets are mandatory: `API_TOKEN_HASH_SECRET` must match services that query by `apiTokenHash`, and `API_TOKEN_ENCRYPTION_KEY` must match services that decrypt `apiTokenEncrypted`.
 - Duplicate sensor registration returns HTTP 409 Conflict (mapped from `DbError::AlreadyExists`); logged at `warn!` level.
 - MongoDB client is configured with `connect_timeout = 10s` and `server_selection_timeout = 30s` to prevent indefinite hangs.
 - `GET /sensors/.../features/.../...` returns `value` as native JSON integer for int sensors and native float for float sensors; no `i64 as f64` cast.

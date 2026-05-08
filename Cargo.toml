@@ -22,6 +22,10 @@ panic = "abort"
 rocket = { version = "^0.5.1", features = ["uuid", "secrets", "json"] }
 mongodb = "^3.6.0"
 uuid ={ version = "^1.23.1", features = ["v4", "fast-rng", "macro-diagnostics"] }
+hmac = "^0.13.0"
+sha2 = "^0.11.0"
+base64 = "^0.22.1"
+aes-gcm = "^0.10.3"
 # error handling
 thiserror = "^2.0.18"
 # logger
