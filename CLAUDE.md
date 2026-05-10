@@ -96,7 +96,7 @@ All errors return JSON `{message: string, code: number}`. Examples:
 
 ## Security Notes
 
-- API token secrets are mandatory: `API_TOKEN_HASH_SECRET` must match services that query by `apiTokenHash`, and `API_TOKEN_ENCRYPTION_KEY` must match services that decrypt `apiTokenEncrypted`.
+- API token secrets are mandatory: `API_TOKEN_HASH_SECRET` must match services that query by `apiTokenHash` and must be at least 32 characters, and `API_TOKEN_ENCRYPTION_KEY` must match services that decrypt `apiTokenEncrypted`.
 - Duplicate sensor registration returns HTTP 409 Conflict (mapped from `DbError::AlreadyExists`); logged at `warn!` level.
 - MongoDB client is configured with `connect_timeout = 10s` and `server_selection_timeout = 30s` to prevent indefinite hangs.
 - `GET /sensors/.../features/.../...` returns `value` as native JSON integer for int sensors and native float for float sensors; no `i64 as f64` cast.

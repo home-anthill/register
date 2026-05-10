@@ -7,6 +7,8 @@ use tracing::info;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 
+const MIN_API_TOKEN_HASH_SECRET_LEN: usize = 32;
+
 /// Which runtime environment the application is running in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppEnv {
@@ -60,6 +62,7 @@ pub fn init() -> (Env, AppEnv) {
     dotenv().ok();
     let env = envy::from_env::<Env>().expect("failed to parse environment variables");
     let app_env = AppEnv::from_env();
+    validate_env(&env).expect("invalid environment variables");
 
     // Configure logging if not in test env.
     // We use set_global_default (not .init()) intentionally: .init() would also install
@@ -105,6 +108,13 @@ pub fn init() -> (Env, AppEnv) {
     (env, app_env)
 }
 
+fn validate_env(env: &Env) -> Result<(), String> {
+    if env.api_token_hash_secret.trim().len() < MIN_API_TOKEN_HASH_SECRET_LEN {
+        return Err(format!("API_TOKEN_HASH_SECRET must be at least {MIN_API_TOKEN_HASH_SECRET_LEN} characters"));
+    }
+    Ok(())
+}
+
 fn print_env(env: &Env) {
     info!(target: "app", "log_level = {}", env.log_level.as_deref().unwrap_or("debug"));
     info!(target: "app", "mongo_uri = [REDACTED]");
@@ -138,5 +148,21 @@ mod tests {
         assert!(!debug.contains("mongodb://user"));
         assert!(!debug.contains("hash-secret"));
         assert!(!debug.contains("encryption-key"));
+    }
+
+    #[test]
+    fn validate_env_rejects_short_api_token_hash_secret() {
+        let env = Env {
+            log_level: Some("debug".to_string()),
+            mongo_uri: "mongodb://localhost:27017".to_string(),
+            mongo_db_name: "sensors".to_string(),
+            api_token_hash_secret: "short".to_string(),
+            api_token_encryption_key: "0123456789abcdef0123456789abcdef".to_string(),
+            mongo_max_retries: Some(3),
+        };
+
+        let err = super::validate_env(&env).expect_err("short API_TOKEN_HASH_SECRET must fail");
+
+        assert!(err.contains("API_TOKEN_HASH_SECRET"));
     }
 }
