@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents when working with code in this repository.
 
 ## Project Overview
 
@@ -106,7 +106,7 @@ All errors return JSON `{message: string, code: number}`. Examples:
 
 **Dockerfile:** 5-stage multi-stage build (chef → planner → builder → system-deps → runtime). The `system-deps` stage installs CA certificates and pre-creates `/app/logs` owned by nobody (uid 65534). The runtime stage uses the hardened image `dhi.io/debian-base:trixie` (no package manager), runs as non-root uid 65534, and uses an absolute `ENTRYPOINT ["/app/register"]`.
 
-When making significant changes (new features, bug fixes, refactors), append an entry to `CHANGELOG_CLAUDE.md` in this directory.
+When making significant changes (new features, bug fixes, refactors), append an entry to `CHANGELOG.md` in this directory.
 
 GitHub Actions (`.github/workflows/docker-image.yml`):
 - Test job: starts MongoDB 8.0 replica set, runs `make test-coverage`

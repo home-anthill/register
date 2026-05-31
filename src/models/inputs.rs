@@ -73,3 +73,99 @@ fn is_valid_mac(mac: &str) -> bool {
     let valid_count = (&mut parts).take(6).filter(|p| p.len() == 2 && p.chars().all(|c| c.is_ascii_hexdigit())).count();
     valid_count == 6 && parts.next().is_none()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::RegisterInput;
+
+    fn valid_input() -> RegisterInput {
+        RegisterInput {
+            profile_owner_id: "63963ce7c7fd6d463c6c77a3".to_string(),
+            api_token: "473a4861-632b-4915-b01e-cf1d418966c6".to_string(),
+            device_uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
+            mac: "AA:BB:CC:DD:EE:FF".to_string(),
+            model: "test-model".to_string(),
+            manufacturer: "ks89".to_string(),
+            feature_uuid: "6f8b59c2-4ed4-4419-8f66-a59e992ebb54".to_string(),
+        }
+    }
+
+    #[test]
+    fn validate_accepts_valid_input() {
+        let input = valid_input();
+
+        assert!(input.validate().is_ok());
+    }
+
+    #[test]
+    fn validate_rejects_invalid_device_uuid() {
+        let mut input = valid_input();
+        input.device_uuid = "not-a-uuid".to_string();
+
+        let err = input.validate().expect_err("invalid device UUID must fail");
+
+        assert_eq!(err.message, "deviceUuid must be a valid UUID v4");
+    }
+
+    #[test]
+    fn validate_rejects_non_v4_feature_uuid() {
+        let mut input = valid_input();
+        input.feature_uuid = "12345678-1234-1234-1234-123456789012".to_string();
+
+        let err = input.validate().expect_err("non-v4 feature UUID must fail");
+
+        assert_eq!(err.message, "featureUuid must be a valid UUID v4");
+    }
+
+    #[test]
+    fn validate_rejects_malformed_mac() {
+        for mac in ["AA:BB:CC:DD:EE", "AA:BB:CC:DD:EE:GG", "AA-BB-CC-DD-EE-FF"] {
+            let mut input = valid_input();
+            input.mac = mac.to_string();
+
+            let err = input.validate().expect_err("malformed MAC must fail");
+
+            assert_eq!(err.message, "mac must be in XX:XX:XX:XX:XX:XX format");
+        }
+    }
+
+    #[test]
+    fn validate_rejects_empty_model() {
+        let mut input = valid_input();
+        input.model.clear();
+
+        let err = input.validate().expect_err("empty model must fail");
+
+        assert_eq!(err.message, "model must be non-empty and at most 256 characters");
+    }
+
+    #[test]
+    fn validate_rejects_too_long_manufacturer() {
+        let mut input = valid_input();
+        input.manufacturer = "a".repeat(257);
+
+        let err = input.validate().expect_err("too long manufacturer must fail");
+
+        assert_eq!(err.message, "manufacturer must be non-empty and at most 256 characters");
+    }
+
+    #[test]
+    fn validate_rejects_non_ascii_model() {
+        let mut input = valid_input();
+        input.model = "model-\u{00e9}".to_string();
+
+        let err = input.validate().expect_err("non-ASCII model must fail");
+
+        assert_eq!(err.message, "model contains invalid characters");
+    }
+
+    #[test]
+    fn validate_rejects_control_character_in_manufacturer() {
+        let mut input = valid_input();
+        input.manufacturer = "ks89\nlabs".to_string();
+
+        let err = input.validate().expect_err("control character must fail");
+
+        assert_eq!(err.message, "manufacturer contains invalid characters");
+    }
+}

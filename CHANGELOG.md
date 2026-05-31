@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.1
+
+### Tests
+
+- Added unit tests for registration input validation, covering valid payloads, UUID v4 checks, malformed MAC addresses, empty or oversized text fields, non-ASCII text, and control characters.
+- Added unit tests for sensor response building, covering float and integer value extraction plus internal-error responses for wrong BSON value types and missing timestamps.
+
+
 ## 3.0.0
 
 ### Features

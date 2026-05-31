@@ -135,3 +135,80 @@ fn internal_error() -> ApiResponse {
 fn bad_request(message: &str) -> ApiResponse {
     error_response(Status::BadRequest, message)
 }
+
+#[cfg(test)]
+mod tests {
+    use mongodb::bson::{DateTime, doc};
+    use pretty_assertions::assert_eq;
+    use rocket::http::Status;
+    use rocket::serde::json::json;
+
+    use super::build_sensor_response;
+    use crate::models::feature_name::FeatureName;
+
+    #[test]
+    fn build_sensor_response_returns_float_value() {
+        let now = DateTime::now();
+        let doc = doc! {
+            "value": 23.5,
+            "createdAt": now,
+            "modifiedAt": now,
+        };
+
+        let response = build_sensor_response(FeatureName::Temperature, &doc).unwrap();
+
+        assert_eq!(response.status, Status::Ok);
+        assert_eq!(
+            response.json,
+            json!({
+                "value": 23.5,
+                "createdAt": now.timestamp_millis(),
+                "modifiedAt": now.timestamp_millis(),
+            })
+        );
+    }
+
+    #[test]
+    fn build_sensor_response_returns_internal_error_for_wrong_float_type() {
+        let now = DateTime::now();
+        let doc = doc! {
+            "value": 1_i64,
+            "createdAt": now,
+            "modifiedAt": now,
+        };
+
+        let response = build_sensor_response(FeatureName::Temperature, &doc).expect_err("wrong value type must fail");
+
+        assert_eq!(response.status, Status::InternalServerError);
+        assert_eq!(response.json, json!({ "message": "Internal server error", "code": 500 }));
+    }
+
+    #[test]
+    fn build_sensor_response_returns_internal_error_for_wrong_int_type() {
+        let now = DateTime::now();
+        let doc = doc! {
+            "value": 1.5,
+            "createdAt": now,
+            "modifiedAt": now,
+        };
+
+        let response = build_sensor_response(FeatureName::Motion, &doc).expect_err("wrong value type must fail");
+
+        assert_eq!(response.status, Status::InternalServerError);
+        assert_eq!(response.json, json!({ "message": "Internal server error", "code": 500 }));
+    }
+
+    #[test]
+    fn build_sensor_response_returns_internal_error_for_missing_modified_at() {
+        let now = DateTime::now();
+        let doc = doc! {
+            "value": 1_i64,
+            "createdAt": now,
+        };
+
+        let response = build_sensor_response(FeatureName::Motion, &doc).expect_err("missing date must fail");
+
+        assert_eq!(response.status, Status::InternalServerError);
+        assert_eq!(response.json, json!({ "message": "Internal server error", "code": 500 }));
+    }
+}
