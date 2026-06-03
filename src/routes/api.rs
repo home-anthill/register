@@ -53,6 +53,19 @@ pub async fn get_sensor_value(
     find_sensor_value(db, device_uuid, feature_uuid, feature_name).await
 }
 
+/// delete sensor value by device and feature UUIDs
+#[rocket::delete("/sensors/<device_uuid>/features/<feature_uuid>")]
+pub async fn delete_sensor(db: &State<Database>, device_uuid: &str, feature_uuid: &str) -> ApiResponse {
+    if let Err(e) = validate_uuid_field(device_uuid, "device_uuid") {
+        return bad_request(&e.to_string());
+    }
+    if let Err(e) = validate_uuid_field(feature_uuid, "feature_uuid") {
+        return bad_request(&e.to_string());
+    }
+    info!(target: "app", "REST - DELETE - delete_sensor device_uuid = {}, feature_uuid = {}", device_uuid, feature_uuid);
+    delete_sensor_value(db, device_uuid, feature_uuid).await
+}
+
 async fn insert_register(db: &State<Database>, input: RegisterInput, feature_name: FeatureName) -> ApiResponse {
     match sensor::insert_sensor(db, input, feature_name).await {
         Ok(register_doc_id) => {
@@ -83,6 +96,19 @@ async fn find_sensor_value(
         }
         Err(error) => {
             error!(target: "app", "find_sensor_value - error {}", error);
+            internal_error()
+        }
+    }
+}
+
+async fn delete_sensor_value(db: &State<Database>, device_uuid: &str, feature_uuid: &str) -> ApiResponse {
+    match sensor::delete_sensor_by_uuid(db, device_uuid, feature_uuid).await {
+        Ok(deleted_count) => {
+            debug!(target: "app", "delete_sensor_value - deleted_count = {}", deleted_count);
+            ApiResponse { json: json!({}), status: Status::Ok }
+        }
+        Err(error) => {
+            error!(target: "app", "delete_sensor_value - error {}", error);
             internal_error()
         }
     }

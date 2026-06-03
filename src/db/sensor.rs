@@ -64,3 +64,19 @@ pub async fn find_sensor_value_by_uuid(
         })?
         .ok_or_else(|| DbError::other("Cannot find sensor"))
 }
+
+pub async fn delete_sensor_by_uuid(db: &Database, device_uuid: &str, feature_uuid: &str) -> Result<u64, DbError> {
+    debug!(target: "app", "delete_sensor_by_uuid - Called with device_uuid = {}, feature_uuid = {}", device_uuid, feature_uuid);
+    let collection = db.collection::<Document>(COLLECTION_NAME);
+    let filter = doc! {
+        "deviceUuid": device_uuid,
+        "featureUuid": feature_uuid,
+    };
+
+    debug!(target: "app", "delete_sensor_by_uuid - Deleting sensor from db");
+
+    collection.delete_many(filter).await.map(|result| result.deleted_count).map_err(|err| {
+        error!(target: "app", "delete_sensor_by_uuid - MongoDB error: {}", err);
+        DbError::other("Database operation failed")
+    })
+}

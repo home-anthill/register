@@ -290,3 +290,55 @@ async fn get_int_sensor_value() {
     // cleanup
     drop_all_collections(&db).await;
 }
+
+#[rocket::async_test]
+#[test_log::test]
+async fn delete_sensor() {
+    // init
+    let client: Client = Client::tracked(rocket()).await.unwrap();
+    let db: Database = connect().await.unwrap();
+    drop_all_collections(&db).await;
+
+    let feature_type = "online";
+    let profile_owner_id = String::from("63963ce7c7fd6d463c6c77a3");
+    let device_uuid: String = Uuid::new_v4().to_string();
+    let mac: String = get_random_mac();
+    let feature_uuid: String = Uuid::new_v4().to_string();
+    let register_body: RegisterInput = create_register_input(&profile_owner_id, &device_uuid, &mac, &feature_uuid);
+
+    let _ = insert_sensor(&db, register_body, feature_type).await;
+    let document = find_sensor_by_uuid(&db, &device_uuid, &feature_uuid, feature_type).await.unwrap();
+    assert!(document.is_some());
+
+    let req: LocalRequest = client.delete(format!("/sensors/{}/features/{}", device_uuid, feature_uuid));
+    let res: LocalResponse = req.dispatch().await;
+
+    assert_eq!(res.status(), Status::Ok);
+    assert_eq!(res.into_json::<Value>().await.unwrap(), json!({}));
+    let document = find_sensor_by_uuid(&db, &device_uuid, &feature_uuid, feature_type).await.unwrap();
+    assert!(document.is_none());
+
+    // cleanup
+    drop_all_collections(&db).await;
+}
+
+#[rocket::async_test]
+#[test_log::test]
+async fn delete_sensor_returns_ok_when_missing() {
+    // init
+    let client: Client = Client::tracked(rocket()).await.unwrap();
+    let db: Database = connect().await.unwrap();
+    drop_all_collections(&db).await;
+
+    let device_uuid: String = Uuid::new_v4().to_string();
+    let feature_uuid: String = Uuid::new_v4().to_string();
+
+    let req: LocalRequest = client.delete(format!("/sensors/{}/features/{}", device_uuid, feature_uuid));
+    let res: LocalResponse = req.dispatch().await;
+
+    assert_eq!(res.status(), Status::Ok);
+    assert_eq!(res.into_json::<Value>().await.unwrap(), json!({}));
+
+    // cleanup
+    drop_all_collections(&db).await;
+}

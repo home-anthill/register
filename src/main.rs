@@ -20,7 +20,12 @@ fn rocket() -> Rocket<Build> {
         .attach(db::init(env, app_env))
         .mount(
             "/",
-            rocket::routes![routes::api::post_register, routes::api::get_sensor_value, routes::api::keep_alive,],
+            rocket::routes![
+                routes::api::post_register,
+                routes::api::get_sensor_value,
+                routes::api::delete_sensor,
+                routes::api::keep_alive,
+            ],
         )
         .register(
             "/",

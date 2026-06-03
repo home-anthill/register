@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Added idempotent `DELETE /sensors/<deviceUuid>/features/<featureUuid>` cleanup for
+  removing registered sensor documents when a device is deleted upstream.
+
 ## 3.0.1
 
 ### Tests
