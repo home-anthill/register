@@ -1,5 +1,5 @@
-use aes_gcm::aead::{Aead, OsRng};
-use aes_gcm::{AeadCore, Aes256Gcm, KeyInit as AesKeyInit, Nonce};
+use aes_gcm::aead::{Aead, Generate};
+use aes_gcm::{Aes256Gcm, KeyInit as AesKeyInit};
 use base64::Engine;
 use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
 use hmac::digest::KeyInit as HmacKeyInit;
@@ -7,6 +7,7 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 
 const API_TOKEN_NONCE_SIZE: usize = 12;
+type ApiTokenNonce = aes_gcm::aead::Nonce<Aes256Gcm>;
 
 pub fn hash_api_token(api_token: &str) -> Result<String, String> {
     let secret = api_token_hash_secret()?;
@@ -19,7 +20,7 @@ pub fn hash_api_token(api_token: &str) -> Result<String, String> {
 pub fn encrypt_api_token(api_token: &str) -> Result<String, String> {
     let cipher =
         <Aes256Gcm as AesKeyInit>::new_from_slice(&api_token_encryption_key()?).map_err(|err| err.to_string())?;
-    let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+    let nonce = ApiTokenNonce::generate();
     let ciphertext = cipher.encrypt(&nonce, api_token.as_bytes()).map_err(|err| err.to_string())?;
     let mut encoded = nonce.to_vec();
     encoded.extend_from_slice(&ciphertext);
@@ -33,9 +34,9 @@ pub fn decrypt_api_token(encrypted: &str) -> Result<String, String> {
     }
     let cipher =
         <Aes256Gcm as AesKeyInit>::new_from_slice(&api_token_encryption_key()?).map_err(|err| err.to_string())?;
-    let plaintext = cipher
-        .decrypt(Nonce::from_slice(&raw[..API_TOKEN_NONCE_SIZE]), &raw[API_TOKEN_NONCE_SIZE..])
-        .map_err(|err| err.to_string())?;
+    let nonce =
+        <&ApiTokenNonce>::try_from(&raw[..API_TOKEN_NONCE_SIZE]).map_err(|_| "invalid api token nonce".to_string())?;
+    let plaintext = cipher.decrypt(nonce, &raw[API_TOKEN_NONCE_SIZE..]).map_err(|err| err.to_string())?;
     String::from_utf8(plaintext).map_err(|err| err.to_string())
 }
 
