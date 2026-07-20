@@ -14,6 +14,7 @@ pub enum FeatureName {
     AirQuality,
     AirPressure,
     Online,
+    Mode,
 }
 
 impl FeatureName {
@@ -25,6 +26,7 @@ impl FeatureName {
         Self::AirQuality,
         Self::AirPressure,
         Self::Online,
+        Self::Mode,
     ];
 
     pub fn is_float(self) -> bool {
@@ -40,6 +42,7 @@ impl FeatureName {
             Self::AirQuality => "airquality",
             Self::AirPressure => "airpressure",
             Self::Online => "online",
+            Self::Mode => "mode",
         }
     }
 }
@@ -62,6 +65,7 @@ impl FromStr for FeatureName {
             "airquality" => Ok(Self::AirQuality),
             "airpressure" => Ok(Self::AirPressure),
             "online" => Ok(Self::Online),
+            "mode" => Ok(Self::Mode),
             _ => Err(InvalidFeatureName),
         }
     }

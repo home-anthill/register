@@ -4,6 +4,7 @@
 
 ### Features
 
+- Added integer `mode` sensor registration and value retrieval for thermostat devices.
 - Added idempotent `DELETE /sensors/<deviceUuid>/features/<featureUuid>` cleanup for
   removing registered sensor documents when a device is deleted upstream.
 
@@ -76,4 +77,5 @@
 
 ### Tests
 
+- Added thermostat registration coverage both with and without the optional `mode` feature.
 - Updated CI to run tests against a MongoDB 8.0 replica set with coverage reporting.
