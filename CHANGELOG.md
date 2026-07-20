@@ -1,14 +1,13 @@
 # Changelog
 
-## Unreleased
+
+## 3.1.0
 
 ### Features
 
 - Added integer `mode` sensor registration and value retrieval for thermostat devices.
 - Added idempotent `DELETE /sensors/<deviceUuid>/features/<featureUuid>` cleanup for
   removing registered sensor documents when a device is deleted upstream.
-
-## 3.0.1
 
 ### Tests
 
