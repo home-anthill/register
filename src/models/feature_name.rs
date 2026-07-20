@@ -30,7 +30,7 @@ impl FeatureName {
     ];
 
     pub fn is_float(self) -> bool {
-        matches!(self, Self::Temperature | Self::Humidity | Self::Light | Self::AirPressure)
+        matches!(self, Self::Temperature | Self::Humidity | Self::Light | Self::AirPressure | Self::Mode)
     }
 
     pub fn as_str(self) -> &'static str {
@@ -44,6 +44,16 @@ impl FeatureName {
             Self::Online => "online",
             Self::Mode => "mode",
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FeatureName;
+
+    #[test]
+    fn mode_is_a_float_feature() {
+        assert!(FeatureName::Mode.is_float());
     }
 }
 

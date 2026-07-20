@@ -195,6 +195,24 @@ mod tests {
     }
 
     #[test]
+    fn build_sensor_response_returns_admitted_mode_float_values() {
+        let now = DateTime::now();
+
+        for value in [-1.0, 0.0, 1.0, 2.0] {
+            let doc = doc! {
+                "value": value,
+                "createdAt": now,
+                "modifiedAt": now,
+            };
+
+            let response = build_sensor_response(FeatureName::Mode, &doc).unwrap();
+
+            assert_eq!(response.status, Status::Ok);
+            assert_eq!(response.json["value"], json!(value));
+        }
+    }
+
+    #[test]
     fn build_sensor_response_returns_internal_error_for_wrong_float_type() {
         let now = DateTime::now();
         let doc = doc! {
