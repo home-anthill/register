@@ -265,6 +265,12 @@ async fn get_float_sensor_value() {
         (String::from("light"), 12_f64),
         (String::from("airpressure"), 10.99),
         (String::from("mode"), -1.0),
+        (String::from("iaq"), 75.5),
+        (String::from("voc"), 0.75),
+        (String::from("eco2"), 650.0),
+        (String::from("altitude"), -12.5),
+        (String::from("ph"), 7.25),
+        (String::from("co2"), 850.0),
     ]);
 
     for (feature_type, sensor_val) in &sensors_inputs {
@@ -319,7 +325,7 @@ async fn get_int_sensor_value() {
 
     // run tests for every feature_type
     let sensors_inputs: HashMap<String, i64> =
-        HashMap::from([(String::from("motion"), 1), (String::from("airquality"), 2)]);
+        HashMap::from([(String::from("motion"), 1), (String::from("airquality"), 2), (String::from("level"), 1)]);
 
     for (feature_type, sensor_val) in &sensors_inputs {
         info!(target: "test", "get_sensor_value - TEST with type = {} and value = {}", &feature_type, sensor_val);

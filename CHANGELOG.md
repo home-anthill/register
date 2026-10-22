@@ -1,12 +1,15 @@
 # Changelog
 
-## 3.1.0
+## 4.0.0
 
 ### Features
 
+- Added support for `altitude`, `co2`, `level`, and `ph` using the existing sensor patterns. Allow registration and value retrieval with float altitude/pH/CO₂ and integer level values.
+- Allow registration and value retrieval for numeric `iaq`, `voc`, and `eco2` features.
 - Added integer `mode` sensor registration and value retrieval for thermostat devices.
 - Added idempotent `DELETE /sensors/<deviceUuid>/features/<featureUuid>` cleanup for
   removing registered sensor documents when a device is deleted upstream.
+- Disabled Rocket's default HTTP/2 feature to remove the vulnerable `h2` 0.3 dependency (RUSTSEC-2026-0258). The service continues to support HTTP/1.1.
 
 ### Tests
 

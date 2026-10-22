@@ -13,6 +13,13 @@ pub enum FeatureName {
     Motion,
     AirQuality,
     AirPressure,
+    Iaq,
+    Voc,
+    Eco2,
+    Altitude,
+    Co2,
+    Level,
+    Ph,
     Online,
     Mode,
 }
@@ -25,12 +32,32 @@ impl FeatureName {
         Self::Motion,
         Self::AirQuality,
         Self::AirPressure,
+        Self::Iaq,
+        Self::Voc,
+        Self::Eco2,
+        Self::Altitude,
+        Self::Co2,
+        Self::Level,
+        Self::Ph,
         Self::Online,
         Self::Mode,
     ];
 
     pub fn is_float(self) -> bool {
-        matches!(self, Self::Temperature | Self::Humidity | Self::Light | Self::AirPressure | Self::Mode)
+        matches!(
+            self,
+            Self::Temperature
+                | Self::Humidity
+                | Self::Light
+                | Self::AirPressure
+                | Self::Mode
+                | Self::Iaq
+                | Self::Voc
+                | Self::Eco2
+                | Self::Altitude
+                | Self::Ph
+                | Self::Co2
+        )
     }
 
     pub fn as_str(self) -> &'static str {
@@ -41,6 +68,13 @@ impl FeatureName {
             Self::Motion => "motion",
             Self::AirQuality => "airquality",
             Self::AirPressure => "airpressure",
+            Self::Iaq => "iaq",
+            Self::Voc => "voc",
+            Self::Eco2 => "eco2",
+            Self::Altitude => "altitude",
+            Self::Co2 => "co2",
+            Self::Level => "level",
+            Self::Ph => "ph",
             Self::Online => "online",
             Self::Mode => "mode",
         }
@@ -74,6 +108,13 @@ impl FromStr for FeatureName {
             "motion" => Ok(Self::Motion),
             "airquality" => Ok(Self::AirQuality),
             "airpressure" => Ok(Self::AirPressure),
+            "iaq" => Ok(Self::Iaq),
+            "voc" => Ok(Self::Voc),
+            "eco2" => Ok(Self::Eco2),
+            "altitude" => Ok(Self::Altitude),
+            "co2" => Ok(Self::Co2),
+            "level" => Ok(Self::Level),
+            "ph" => Ok(Self::Ph),
             "online" => Ok(Self::Online),
             "mode" => Ok(Self::Mode),
             _ => Err(InvalidFeatureName),
